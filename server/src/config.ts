@@ -1,0 +1,9 @@
+export const PORT = Number(process.env.PORT) || 4000;
+export const MAX_USERS_PER_ROOM = 8;
+export const MAX_OBJECTS_PER_ROOM = 750;
+export const WS_HEARTBEAT_INTERVAL_MS = 5000;
+export const WS_HEARTBEAT_TIMEOUT_MS = 12000;
+export const MAX_CURSOR_RATE_PER_SEC = 35;
+export const MAX_REACTIONS_PER_SEC = 5;
+export const MAX_ACTIONS_PER_SEC = 60;
+export const MAX_BACKPRESSURE_BYTES = 64 * 1024; // 64KB threshold for dropping droppable cursor packets

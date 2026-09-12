@@ -1,0 +1,83 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build Outputs
+dist/
+dist-ssr/
+build/
+out/
+*.tsbuildinfo
+.vite/
+.parcel-cache/
+.turbo/
+.cache/
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+*.pem
+*.key
+*.cert
+*.crt
+
+# Logs & Debugging
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# PRD, Specifications & Internal Planning Documents
+*PRD*
+*prd*
+FlowSpace_Final_PRD_v4.md
+FlowSpace_Implementation_Plan_v2.md
+implementation_plan.md
+*Implementation_Plan*
+*implementation_plan*
+*.plan.md
+*.draft.md
+scratchpad*.md
+TODO.md
+notes.md
+*.notes.md
+
+# AI Agent & Scratch / Temporary Artifacts
+.tempmediaStorage/
+.system_generated/
+.gemini/
+.agents/
