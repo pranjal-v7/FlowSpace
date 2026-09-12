@@ -1047,8 +1047,8 @@ button {
   text-align: center;
   background-color: #f8fafc;
   color: var(--accent-primary);
-  border: 2px dashed rgba(79, 70, 229, 0.45);
-  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md);
 }
 
 .room-code-input {
@@ -1057,7 +1057,8 @@ button {
   font-weight: 600;
   letter-spacing: 0.1em;
   text-align: center;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid #e2e8f0;
 }
 
 .regenerate-code-btn {
@@ -1073,25 +1074,6 @@ button {
 
 .regenerate-code-btn:hover {
   opacity: 0.8;
-}
-
-.creator-privilege-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
-  color: #047857;
-  background: #ecfdf5;
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid #a7f3d0;
-  margin-top: 6px;
-  font-weight: 500;
-}
-
-.creator-privilege-badge .crown-icon {
-  color: #059669;
-  flex-shrink: 0;
 }
 
 /* Palette & Swatches */
@@ -1156,45 +1138,6 @@ button {
   border-radius: 12px;
   padding: 0.9rem 1.25rem;
   font-size: 0.98rem;
-}
-
-/* Quick Suggestion Chips (TypeScrape style) */
-.landing-quick-suggestions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 1.25rem;
-  font-size: 0.82rem;
-  color: #64748b;
-  flex-wrap: wrap;
-}
-
-.suggestions-label {
-  font-size: 0.8rem;
-  color: #64748b;
-}
-
-.suggestion-chip {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(203, 213, 225, 0.9);
-  border-radius: 6px;
-  padding: 3px 9px;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #4338ca;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.suggestion-chip:hover {
-  background: #ffffff;
-  border-color: #818cf8;
-  color: #3730a3;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.15);
 }
 
 /* Keyframe Animations */

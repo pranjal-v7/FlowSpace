@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { COLLABORATOR_COLORS } from "../../../shared/types.js";
-import { PlusCircle, LogIn, RotateCw, Users, Crown, Sparkles, Shuffle, Check } from "lucide-react";
+import { PlusCircle, LogIn, RotateCw, Users, Sparkles, Shuffle, Check } from "lucide-react";
 import { DoodleGraffitiOverlay } from "./DoodleGraffitiOverlay.js";
 
 interface JoinScreenProps {
@@ -13,8 +13,6 @@ const PRESET_NAMES = [
   "Aisha", "Rohan", "Meera", "Karan", "Siddharth", "Ananya", "Dev", "Tara",
   "Kabir", "Zara", "Vikram", "Isha", "Arjun", "Diya"
 ];
-
-const SUGGESTED_ROOMS = ["849201", "302194", "101010"];
 
 export const JoinScreen: React.FC<JoinScreenProps> = ({
   onJoin,
@@ -39,11 +37,6 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({
     const available = PRESET_NAMES.filter((n) => n !== displayName);
     const pick = available[Math.floor(Math.random() * available.length)];
     setDisplayName(pick);
-  };
-
-  const handleSelectSuggestedRoom = (code: string) => {
-    setMode("join");
-    setJoinRoomId(code);
   };
 
   useEffect(() => {
@@ -173,10 +166,6 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({
                     readOnly
                   />
                 </div>
-                <div className="creator-privilege-badge">
-                  <Crown size={14} className="crown-icon" />
-                  <span>You will be the <strong>Room Creator</strong> (Master Erase access).</span>
-                </div>
               </div>
             ) : (
               <div className="form-group">
@@ -244,21 +233,6 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({
               <span>{mode === "create" ? "Create & Enter Room" : "Join FlowSpace Room"}</span>
             </button>
           </form>
-        </div>
-
-        {/* Quick Suggestion Room Chips (TypeScrape style "Try stripe.com, linear.app...") */}
-        <div className="landing-quick-suggestions">
-          <span className="suggestions-label">Try demo room:</span>
-          {SUGGESTED_ROOMS.map((code) => (
-            <button
-              key={code}
-              type="button"
-              className="suggestion-chip"
-              onClick={() => handleSelectSuggestedRoom(code)}
-            >
-              #{code}
-            </button>
-          ))}
         </div>
       </div>
     </div>
