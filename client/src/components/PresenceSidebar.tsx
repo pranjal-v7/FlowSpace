@@ -1,16 +1,38 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { MAX_USERS_PER_ROOM, Participant } from "../shared/types.js";
-import { Users } from "lucide-react";
+import { Users, Minus } from "lucide-react";
 
 interface PresenceSidebarProps {
   participants: Participant[];
   currentUserId: string | null;
+  initialMinimized?: boolean;
 }
 
 export const PresenceSidebar: React.FC<PresenceSidebarProps> = ({
   participants,
   currentUserId,
+  initialMinimized,
 }) => {
+  const [isMinimized, setIsMinimized] = useState<boolean>(() => {
+    if (typeof initialMinimized === "boolean") return initialMinimized;
+    if (typeof window !== "undefined") {
+      return window.innerWidth <= 960;
+    }
+    return false;
+  });
+
+  // Automatically minimize when screen is shrinked to tablet/mobile widths
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 960) {
+        setIsMinimized(true);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Build an 8-slot array (PRD Section 69)
   const totalSlots = MAX_USERS_PER_ROOM;
   const slots: (Participant | null)[] = [];
@@ -19,16 +41,46 @@ export const PresenceSidebar: React.FC<PresenceSidebarProps> = ({
     slots.push(participants[i] || null);
   }
 
+  if (isMinimized) {
+    return (
+      <div className="presence-minimized-wrapper">
+        <button
+          type="button"
+          className="presence-circular-trigger glass-panel"
+          onClick={() => setIsMinimized(false)}
+          title={`Participants (${participants.length}/${MAX_USERS_PER_ROOM}) - Click to expand`}
+          aria-label="Open participants list"
+        >
+          <div className="presence-trigger-icon-wrapper">
+            <Users size={18} className="presence-trigger-icon" />
+          </div>
+          <span className="presence-status-glow" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <aside className="presence-panel glass-panel">
       <div className="presence-header">
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <Users size={15} />
+        <div className="presence-title-group">
+          <Users size={16} />
           <span>Participants</span>
         </div>
-        <span className="presence-count-badge">
-          {participants.length} / {MAX_USERS_PER_ROOM}
-        </span>
+        <div className="presence-actions-group">
+          <span className="presence-count-badge">
+            {participants.length} / {MAX_USERS_PER_ROOM}
+          </span>
+          <button
+            type="button"
+            className="presence-minimize-btn"
+            onClick={() => setIsMinimized(true)}
+            title="Minimize participants list"
+            aria-label="Minimize participants list"
+          >
+            <Minus size={14} />
+          </button>
+        </div>
       </div>
 
       <div className="slots-grid">

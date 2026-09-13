@@ -228,9 +228,14 @@ button {
 }
 
 .header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 1rem;
+  pointer-events: auto;
+  z-index: 10;
 }
 
 .header-telemetry {
@@ -618,17 +623,106 @@ button {
 }
 
 /* ==========================================================================
-   PRESENCE SIDEBAR & PARTICIPANT LIST
+   PRESENCE SIDEBAR & PARTICIPANT LIST (EXPANDED & MINIMIZED)
    ========================================================================== */
+
+.presence-minimized-wrapper {
+  position: absolute;
+  top: calc(var(--header-height) + 1.25rem);
+  right: 1.25rem;
+  z-index: 35;
+  animation: presenceScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.presence-circular-trigger {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.1), 0 2px 6px -1px rgba(15, 23, 42, 0.06);
+  cursor: pointer;
+  position: relative;
+  color: var(--text-secondary);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              box-shadow 0.2s ease,
+              border-color 0.2s ease,
+              background-color 0.2s ease,
+              color 0.2s ease;
+}
+
+.presence-circular-trigger:hover {
+  transform: scale(1.1) translateY(-2px);
+  color: var(--accent-primary);
+  background: #ffffff;
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 8px 20px -3px rgba(99, 102, 241, 0.25), 0 4px 8px -2px rgba(15, 23, 42, 0.08);
+}
+
+.presence-circular-trigger:active {
+  transform: scale(0.96);
+}
+
+.presence-trigger-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.presence-trigger-icon {
+  transition: transform 0.2s ease;
+}
+
+.presence-circular-trigger:hover .presence-trigger-icon {
+  transform: scale(1.06);
+}
+
+.presence-trigger-badge {
+  position: absolute;
+  top: -9px;
+  right: -11px;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, #4338ca 100%);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 5px rgba(99, 102, 241, 0.4);
+}
+
+.presence-status-glow {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--status-connected);
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 6px var(--status-connected);
+}
 
 .presence-panel {
   position: absolute;
   top: calc(var(--header-height) + 1.25rem);
   right: 1.25rem;
   width: 240px;
-  padding: 1rem;
+  padding: 0.9rem;
   z-index: 35;
   background: rgba(255, 255, 255, 0.95);
+  animation: presencePanelSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .presence-header {
@@ -636,22 +730,84 @@ button {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.75rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.presence-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   font-family: var(--font-heading);
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
 }
 
+.presence-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.presence-minimize-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  padding: 0;
+}
+
+.presence-minimize-btn:hover {
+  color: var(--text-primary);
+  background: #f1f5f9;
+  border-color: var(--border-subtle);
+  transform: scale(1.08);
+}
+
+.presence-minimize-btn:active {
+  transform: scale(0.95);
+}
+
 .presence-count-badge {
   background: #f1f5f9;
   border: 1px solid var(--border-subtle);
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: var(--radius-full);
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+@keyframes presenceScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes presencePanelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .slots-grid {
@@ -1448,15 +1604,15 @@ html, body, #root, .app-container {
 /* 2. Tablet Tier (768px < width <= 1024px) */
 @media (max-width: 1024px) {
   :root {
-    --header-height: 54px;
+    --header-height: 52px;
   }
 
   .app-header {
-    padding: 0 1rem;
+    padding: 0 0.85rem;
   }
 
   .header-brand {
-    gap: 0.75rem;
+    gap: 0.6rem;
   }
 
   .header-logo-img {
@@ -1466,17 +1622,30 @@ html, body, #root, .app-container {
   }
 
   .header-title {
-    font-size: 1.15rem;
+    font-size: 1.12rem;
   }
 
   .header-room-badge {
-    padding: 0.25rem 0.65rem;
-    gap: 0.35rem;
+    padding: 0.22rem 0.6rem;
+    gap: 0.3rem;
+  }
+
+  .header-creator-badge {
+    padding: 0.25rem 0.6rem;
+    gap: 4px;
+    font-size: 0.75rem;
+  }
+
+  .header-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 0.65rem;
   }
 
   .header-telemetry {
-    padding: 0.35rem 0.85rem;
-    gap: 0.75rem;
+    padding: 0.32rem 0.75rem;
+    gap: 0.65rem;
     font-size: 0.78rem;
   }
 
@@ -1488,14 +1657,19 @@ html, body, #root, .app-container {
   .btn-clear-canvas,
   .btn-leave {
     height: 36px;
-    padding: 0 0.8rem;
+    padding: 0 0.75rem;
     font-size: 0.78rem;
     gap: 4px;
   }
 
-  /* Presence Panel scales comfortably on Tablet */
+  /* Presence Panel & Minimized trigger on Tablet */
+  .presence-minimized-wrapper {
+    top: calc(var(--header-height) + 0.85rem);
+    right: 0.85rem;
+  }
+
   .presence-panel {
-    width: 195px;
+    width: 210px;
     padding: 0.75rem;
     top: calc(var(--header-height) + 0.85rem);
     right: 0.85rem;
@@ -1547,77 +1721,117 @@ html, body, #root, .app-container {
   }
 }
 
-/* Progressive Collapse Step 1: Secondary Telemetry (Latency & FPS) at width <= 960px */
-@media (max-width: 960px) {
-  .telemetry-item-latency,
-  .telemetry-item-fps {
-    max-width: 0 !important;
-    opacity: 0 !important;
-    transform: scale(0.9);
-    margin: 0 !important;
-    padding: 0 !important;
-    pointer-events: none !important;
-    visibility: hidden !important;
-  }
-}
-
-/* Progressive Collapse Step 2: Badges & Secondary Action Buttons at width <= 768px */
+/* 3. Small Tablet & Large Mobile Tier (max-width: 768px) */
 @media (max-width: 768px) {
-  .room-badge-label {
-    max-width: 0 !important;
-    opacity: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    pointer-events: none !important;
-    visibility: hidden !important;
+  :root {
+    --header-height: 50px;
   }
 
-  .creator-badge-text {
-    max-width: 0 !important;
-    opacity: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    pointer-events: none !important;
-    visibility: hidden !important;
+  .app-header {
+    padding: 0 0.65rem;
+  }
+
+  .header-brand {
+    gap: 0.45rem;
+  }
+
+  .header-logo-img {
+    width: 26px;
+    height: 26px;
+  }
+
+  .header-title {
+    font-size: 1.05rem;
+  }
+
+  .header-room-badge {
+    padding: 0.2rem 0.5rem;
+    gap: 0.25rem;
+  }
+
+  .room-badge-label {
+    font-size: 0.74rem;
+  }
+
+  .room-badge-code {
+    font-size: 0.92rem;
   }
 
   .header-creator-badge {
-    padding: 0.28rem 0.55rem;
-    gap: 0;
+    padding: 0.22rem 0.5rem;
+    gap: 3px;
+    font-size: 0.72rem;
+  }
+
+  .creator-badge-text {
+    font-size: 0.72rem;
+  }
+
+  .header-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .header-telemetry {
+    padding: 0.28rem 0.65rem;
+    gap: 0.55rem;
+    font-size: 0.75rem;
+  }
+
+  .connection-status-text {
+    font-size: 0.74rem;
+  }
+
+  .telemetry-item {
+    gap: 0.35rem;
+  }
+
+  .btn-icon {
+    width: 34px;
+    height: 34px;
   }
 
   .btn-clear-canvas,
-  .header-btn-telemetry {
-    max-width: 0 !important;
-    opacity: 0 !important;
-    transform: scale(0.9);
-    margin: 0 !important;
-    padding: 0 !important;
-    border-width: 0 !important;
-    pointer-events: none !important;
-    visibility: hidden !important;
+  .btn-leave {
+    height: 34px;
+    padding: 0 0.65rem;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+
+  .presence-minimized-wrapper {
+    top: calc(var(--header-height) + 0.75rem);
+    right: 0.75rem;
+  }
+
+  .presence-panel {
+    width: 205px;
+    padding: 0.7rem;
+    top: calc(var(--header-height) + 0.75rem);
+    right: 0.75rem;
   }
 }
 
-/* 3. Compact Mobile Header Tier (max-width: 640px) - Exact match to reference design */
+/* 4. Compact Mobile Tier (max-width: 640px) */
 @media (max-width: 640px) {
   :root {
     --header-height: 48px;
   }
 
   .app-header {
-    padding: 0 0.65rem;
+    padding: 0 0.5rem;
     justify-content: space-between;
-    flex-wrap: nowrap;
+    position: relative;
   }
 
   .header-brand {
-    gap: 0.4rem;
+    gap: 0.35rem;
     flex-shrink: 0;
   }
 
   .header-brand-cluster {
-    gap: 0.35rem;
+    gap: 0.3rem;
   }
 
   .header-logo-img {
@@ -1627,77 +1841,89 @@ html, body, #root, .app-container {
   }
 
   .header-title {
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 800;
   }
 
   .header-room-badge {
-    padding: 0.24rem 0.65rem;
-    gap: 0;
+    padding: 0.2rem 0.45rem;
+    gap: 0.2rem;
+  }
+
+  .room-badge-label {
+    font-size: 0.72rem;
   }
 
   .room-badge-code {
-    font-size: 0.92rem;
+    font-size: 0.88rem;
     font-weight: 700;
   }
 
   .header-creator-badge {
-    padding: 0.24rem 0.52rem;
-    gap: 0;
+    padding: 0.2rem 0.45rem;
+    gap: 3px;
     border-radius: var(--radius-full);
   }
 
   .creator-crown-icon {
-    width: 14px;
-    height: 14px;
+    width: 13px;
+    height: 13px;
   }
 
-  /* Telemetry pill transforms into [● 1 / 8] */
-  .connection-status-text,
-  .telemetry-participants-icon {
-    max-width: 0 !important;
-    opacity: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    pointer-events: none !important;
-    visibility: hidden !important;
+  .creator-badge-text {
+    font-size: 0.7rem;
   }
 
   .header-center {
-    display: flex;
-    align-items: center;
-    margin-left: 0.2rem;
-    flex-shrink: 0;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
   }
 
   .header-telemetry {
-    padding: 0.25rem 0.65rem;
+    padding: 0.22rem 0.55rem;
     gap: 0.45rem;
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     font-weight: 600;
   }
 
-  .telemetry-item-connection {
-    gap: 0;
+  .telemetry-item {
+    gap: 0.25rem;
+  }
+
+  .connection-status-text {
+    font-size: 0.72rem;
   }
 
   .telemetry-participants-count {
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     font-weight: 600;
-    color: var(--text-secondary);
   }
 
   .header-actions {
     margin-left: auto;
     flex-shrink: 0;
-    gap: 0.35rem;
+    gap: 0.3rem;
+  }
+
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .btn-clear-canvas {
+    height: 32px;
+    padding: 0 0.5rem;
+    font-size: 0.72rem;
+    gap: 3px;
   }
 
   .btn-leave {
-    height: 34px;
-    padding: 0 0.85rem;
-    font-size: 0.8rem;
-    gap: 5px;
+    height: 32px;
+    padding: 0 0.65rem;
+    font-size: 0.74rem;
+    gap: 4px;
     background: #fff1f2;
     border: 1px solid #fecdd3;
     color: #e11d48;
@@ -1708,9 +1934,28 @@ html, body, #root, .app-container {
     display: inline !important;
   }
 
-  /* On narrow mobile, hide presence panel to dedicate 100% of canvas to drawing */
+  /* Minimized Circular Button on Mobile */
+  .presence-minimized-wrapper {
+    top: calc(var(--header-height) + 0.6rem);
+    right: 0.6rem;
+  }
+
+  .presence-circular-trigger {
+    width: 40px;
+    height: 40px;
+  }
+
+  .presence-circular-trigger .presence-trigger-icon {
+    width: 16px;
+    height: 16px;
+  }
+
   .presence-panel {
-    display: none !important;
+    top: calc(var(--header-height) + 0.6rem);
+    right: 0.6rem;
+    width: min(220px, calc(100vw - 1.2rem));
+    padding: 0.65rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 0 1px 1px rgba(15, 23, 42, 0.1);
   }
 
   /* Floating Toolbar for Mobile */
@@ -1727,7 +1972,7 @@ html, body, #root, .app-container {
     border-radius: var(--radius-sm);
   }
 
-  /* Style Toolbar for Mobile - scrollable inside, no page overflow */
+  /* Style Toolbar for Mobile */
   .style-toolbar {
     padding: 0.35rem 0.65rem;
     gap: 0.55rem;
@@ -1766,18 +2011,18 @@ html, body, #root, .app-container {
   }
 }
 
-/* 4. Ultra-Compact Mobile Phones (max-width: 420px, e.g. 375x667, 390x844) */
+/* 5. Ultra-Compact Mobile Phones (max-width: 420px, e.g. 375x667, 390x844, 412x915) */
 @media (max-width: 420px) {
   .app-header {
-    padding: 0 0.45rem;
+    padding: 0 0.35rem;
   }
 
   .header-brand {
-    gap: 0.28rem;
+    gap: 0.25rem;
   }
 
   .header-brand-cluster {
-    gap: 0.25rem;
+    gap: 0.22rem;
   }
 
   .header-logo-img {
@@ -1786,44 +2031,92 @@ html, body, #root, .app-container {
   }
 
   .header-title {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
   }
 
   .header-room-badge {
-    padding: 0.2rem 0.48rem;
+    padding: 0.18rem 0.38rem;
+    gap: 0.15rem;
+  }
+
+  .room-badge-label {
+    font-size: 0.68rem;
   }
 
   .room-badge-code {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
   }
 
   .header-creator-badge {
-    padding: 0.2rem 0.42rem;
+    padding: 0.18rem 0.35rem;
+    gap: 2px;
+  }
+
+  .creator-badge-text {
+    font-size: 0.68rem;
   }
 
   .header-center {
-    margin-left: 0.1rem;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .header-telemetry {
-    padding: 0.2rem 0.48rem;
-    gap: 0.35rem;
-    font-size: 0.74rem;
+    padding: 0.18rem 0.42rem;
+    gap: 0.32rem;
+    font-size: 0.68rem;
+  }
+
+  .telemetry-item {
+    gap: 0.2rem;
+  }
+
+  .connection-status-text {
+    font-size: 0.68rem;
   }
 
   .telemetry-participants-count {
-    font-size: 0.74rem;
+    font-size: 0.68rem;
+  }
+
+  .btn-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .btn-clear-canvas {
+    height: 30px;
+    padding: 0 0.4rem;
+    font-size: 0.68rem;
   }
 
   .btn-leave {
-    height: 32px;
-    padding: 0 0.7rem;
-    font-size: 0.76rem;
-    gap: 4px;
+    height: 30px;
+    padding: 0 0.55rem;
+    font-size: 0.72rem;
+    gap: 3px;
+  }
+
+  .presence-minimized-wrapper {
+    top: calc(var(--header-height) + 0.45rem);
+    right: 0.45rem;
+  }
+
+  .presence-circular-trigger {
+    width: 36px;
+    height: 36px;
+  }
+
+  .presence-panel {
+    top: calc(var(--header-height) + 0.45rem);
+    right: 0.45rem;
+    width: calc(100vw - 0.9rem);
+    max-width: 215px;
   }
 }
 
-/* 5. Landscape & Wide Screen Restoration (orientation: landscape and min-width: 700px) */
+/* 6. Landscape & Wide Screen Restoration */
 @media (orientation: landscape) and (min-width: 700px) {
   :root {
     --header-height: 46px;
@@ -1831,7 +2124,6 @@ html, body, #root, .app-container {
 
   .app-header {
     padding: 0 0.85rem;
-    overflow: hidden;
   }
 
   .header-brand {
@@ -1843,53 +2135,31 @@ html, body, #root, .app-container {
     font-size: 1.1rem;
   }
 
-  /* Smoothly restore "Room:" label */
   .room-badge-label {
-    max-width: 60px !important;
-    opacity: 1 !important;
-    margin-right: 0.25rem !important;
-    padding: 0 !important;
-    pointer-events: auto !important;
-    visibility: visible !important;
+    opacity: 1;
+    display: inline-block;
   }
 
-  /* Smoothly restore "Room Creator" text */
   .creator-badge-text {
-    max-width: 110px !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    visibility: visible !important;
+    opacity: 1;
+    display: inline-block;
   }
 
   .header-creator-badge {
-    padding: 0.25rem 0.65rem !important;
-    gap: 5px !important;
-  }
-
-  /* Smoothly restore "Connected" and Users icon */
-  .connection-status-text {
-    max-width: 90px !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    visibility: visible !important;
-  }
-
-  .telemetry-participants-icon {
-    max-width: 20px !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    visibility: visible !important;
+    padding: 0.25rem 0.65rem;
+    gap: 5px;
   }
 
   .header-center {
-    margin-left: 0.25rem;
-    flex-shrink: 0;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .header-telemetry {
-    padding: 0.25rem 0.75rem !important;
-    gap: 0.65rem !important;
-    font-size: 0.78rem !important;
+    padding: 0.28rem 0.8rem;
+    gap: 0.75rem;
+    font-size: 0.78rem;
   }
 
   .header-actions {
@@ -1898,53 +2168,23 @@ html, body, #root, .app-container {
     gap: 0.45rem;
   }
 
-  /* Smoothly restore Clear Canvas and Telemetry diagnostic buttons */
   .btn-clear-canvas {
-    max-width: 160px !important;
-    opacity: 1 !important;
-    transform: scale(1) !important;
-    padding: 0 0.75rem !important;
-    height: 34px !important;
-    border-width: 1px !important;
-    pointer-events: auto !important;
-    visibility: visible !important;
+    height: 34px;
+    padding: 0 0.75rem;
   }
 
   .header-btn-telemetry {
-    max-width: 40px !important;
-    width: 34px !important;
-    height: 34px !important;
-    opacity: 1 !important;
-    transform: scale(1) !important;
-    border-width: 1px !important;
-    pointer-events: auto !important;
-    visibility: visible !important;
+    width: 34px;
+    height: 34px;
   }
 
   .btn-leave {
     height: 34px;
     padding: 0 0.85rem;
-    flex-shrink: 0;
   }
 }
 
-/* Restore Latency & FPS when landscape width >= 960px */
-@media (orientation: landscape) and (min-width: 960px) {
-  .telemetry-item-latency,
-  .telemetry-item-fps {
-    max-width: 120px !important;
-    opacity: 1 !important;
-    transform: scale(1) !important;
-    pointer-events: auto !important;
-    visibility: visible !important;
-  }
-
-  .header-telemetry {
-    gap: 0.85rem !important;
-  }
-}
-
-/* 6. Mobile Landscape Viewport Ergonomics (orientation: landscape and max-height: 500px) */
+/* 7. Mobile Landscape Viewport Ergonomics (orientation: landscape and max-height: 500px) */
 @media (orientation: landscape) and (max-height: 500px) {
   :root {
     --header-height: 42px;
@@ -1980,10 +2220,20 @@ html, body, #root, .app-container {
     height: 16px;
   }
 
+  .presence-minimized-wrapper {
+    top: calc(var(--header-height) + 0.35rem);
+    right: 0.5rem;
+  }
+
+  .presence-circular-trigger {
+    width: 34px;
+    height: 34px;
+  }
+
   .presence-panel {
     top: calc(var(--header-height) + 0.35rem);
     right: 0.5rem;
-    width: 160px;
+    width: 170px;
     padding: 0.45rem;
     max-height: calc(100vh - 50px);
     overflow-y: auto;
@@ -1994,7 +2244,7 @@ html, body, #root, .app-container {
   }
 }
 
-/* 7. Accessibility: Reduced Motion Support */
+/* 8. Accessibility: Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
