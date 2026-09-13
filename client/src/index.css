@@ -236,6 +236,7 @@ button {
   justify-content: center;
   flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
   gap: 0.75rem;
 }
 
@@ -1720,7 +1721,65 @@ html, body, #root, .app-container {
   }
 }
 
-/* 3. Small Tablet & Large Mobile Tier (max-width: 768px) */
+/* Progressive Collapse Step 1: Hide Latency & FPS at width <= 960px */
+@media (max-width: 960px) {
+  .telemetry-item-latency,
+  .telemetry-item-fps {
+    max-width: 0 !important;
+    opacity: 0 !important;
+    transform: scale(0.9);
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    overflow: hidden;
+  }
+}
+
+/* Progressive Collapse Step 2: Collapse badges & secondary buttons at width <= 768px */
+@media (max-width: 768px) {
+  .room-badge-label {
+    max-width: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+  }
+
+  .creator-badge-text {
+    max-width: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+  }
+
+  .header-creator-badge {
+    padding: 0.28rem 0.55rem;
+    gap: 0;
+  }
+
+  .btn-clear-canvas,
+  .header-btn-telemetry {
+    max-width: 0 !important;
+    opacity: 0 !important;
+    transform: scale(0.9);
+    margin: 0 !important;
+    padding: 0 !important;
+    border-width: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    overflow: hidden;
+  }
+
+  .btn-clear-canvas .btn-label-text {
+    display: none;
+  }
+}
+
+/* 3. Small Tablet & Large Mobile Tier (max-width: 768px) — layout adjustments */
 @media (max-width: 768px) {
   :root {
     --header-height: 50px;
@@ -1748,22 +1807,8 @@ html, body, #root, .app-container {
     gap: 0.25rem;
   }
 
-  .room-badge-label {
-    font-size: 0.74rem;
-  }
-
   .room-badge-code {
     font-size: 0.92rem;
-  }
-
-  .header-creator-badge {
-    padding: 0.22rem 0.5rem;
-    gap: 3px;
-    font-size: 0.72rem;
-  }
-
-  .creator-badge-text {
-    font-size: 0.72rem;
   }
 
   .header-center {
@@ -1789,7 +1834,6 @@ html, body, #root, .app-container {
     height: 34px;
   }
 
-  .btn-clear-canvas,
   .btn-leave {
     height: 34px;
     padding: 0 0.65rem;
@@ -1807,6 +1851,24 @@ html, body, #root, .app-container {
     padding: 0.7rem;
     top: calc(var(--header-height) + 0.75rem);
     right: 0.75rem;
+  }
+}
+
+/* Progressive Collapse Step 3: Collapse connection text & users icon at width <= 640px */
+@media (max-width: 640px) {
+  .connection-status-text,
+  .telemetry-participants-icon {
+    max-width: 0 !important;
+    opacity: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    overflow: hidden;
+  }
+
+  .telemetry-item-connection {
+    gap: 0;
   }
 }
 
@@ -2127,19 +2189,40 @@ html, body, #root, .app-container {
     font-size: 1.1rem;
   }
 
+  /* Restore "Room:" label */
   .room-badge-label {
-    opacity: 1;
-    display: inline-block;
+    max-width: 60px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
   }
 
+  /* Restore "Room Creator" text */
   .creator-badge-text {
-    opacity: 1;
-    display: inline-block;
+    max-width: 110px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
   }
 
   .header-creator-badge {
-    padding: 0.25rem 0.65rem;
-    gap: 5px;
+    padding: 0.25rem 0.65rem !important;
+    gap: 5px !important;
+  }
+
+  /* Restore "Connected" text and Users icon */
+  .connection-status-text {
+    max-width: 90px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+  }
+
+  .telemetry-participants-icon {
+    max-width: 20px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
   }
 
   .header-center {
@@ -2158,19 +2241,51 @@ html, body, #root, .app-container {
     gap: 0.45rem;
   }
 
+  /* Restore Clear Canvas and Telemetry diagnostic buttons */
   .btn-clear-canvas {
-    height: 34px;
-    padding: 0 0.75rem;
+    max-width: 160px !important;
+    opacity: 1 !important;
+    transform: scale(1) !important;
+    padding: 0 0.75rem !important;
+    height: 34px !important;
+    border-width: 1px !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    overflow: visible !important;
   }
 
   .header-btn-telemetry {
-    width: 34px;
-    height: 34px;
+    max-width: 40px !important;
+    width: 34px !important;
+    height: 34px !important;
+    opacity: 1 !important;
+    transform: scale(1) !important;
+    border-width: 1px !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    overflow: visible !important;
   }
 
   .btn-leave {
     height: 34px;
     padding: 0 0.85rem;
+  }
+}
+
+/* Restore Latency & FPS when landscape width >= 960px */
+@media (orientation: landscape) and (min-width: 960px) {
+  .telemetry-item-latency,
+  .telemetry-item-fps {
+    max-width: 120px !important;
+    opacity: 1 !important;
+    transform: scale(1) !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    overflow: visible !important;
+  }
+
+  .header-telemetry {
+    gap: 0.85rem !important;
   }
 }
 
