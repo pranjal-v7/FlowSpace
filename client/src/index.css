@@ -650,6 +650,7 @@ button {
   padding: 0.6rem 1.25rem;
   z-index: 35;
   background: rgba(255, 255, 255, 0.95);
+  max-width: calc(100vw - 360px);
 }
 
 .color-palette {
@@ -1793,6 +1794,14 @@ html, body, #root, .app-container {
   overflow-x: hidden;
 }
 
+/* Medium Desktop & Split Screen Tier (width <= 1280px) */
+@media (max-width: 1280px) {
+  .canvas-zoom-control {
+    bottom: 5.2rem;
+    right: 1.25rem;
+  }
+}
+
 /* 2. Tablet Tier (768px < width <= 1024px) */
 @media (max-width: 1024px) {
   :root {
@@ -1898,6 +1907,11 @@ html, body, #root, .app-container {
     max-width: min(92vw, 540px);
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .canvas-zoom-control {
+    bottom: 4.8rem;
+    right: 1rem;
   }
 
   .color-swatch {
@@ -2040,6 +2054,11 @@ html, body, #root, .app-container {
     padding: 0.7rem;
     top: calc(var(--header-height) + 0.75rem);
     right: 0.75rem;
+  }
+
+  .canvas-zoom-control {
+    bottom: 4.8rem;
+    right: 0.85rem;
   }
 }
 
@@ -2257,7 +2276,7 @@ html, body, #root, .app-container {
 
   /* Zoom Controls for Mobile */
   .canvas-zoom-control {
-    bottom: 4.8rem;
+    bottom: 4.6rem;
     right: 0.65rem;
     padding: 2px;
   }
@@ -2565,6 +2584,12 @@ html, body, #root, .app-container {
 
   .slots-grid {
     max-height: 120px;
+  }
+
+  .canvas-zoom-control {
+    bottom: 3.4rem;
+    right: 0.5rem;
+    padding: 2px;
   }
 }
 
