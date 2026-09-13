@@ -8,7 +8,7 @@ import {
   ClientStrokeMessage,
   ClientTextCreateMessage,
   ServerMessage,
-} from "../../../shared/types.js";
+} from "../shared/types.js";
 import { Room } from "../room.js";
 import { UserSession } from "../session.js";
 

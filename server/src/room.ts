@@ -7,7 +7,7 @@ import {
   Participant,
   RemoteCursorSnapshot,
   ServerMessage,
-} from "../../shared/types.js";
+} from "./shared/types.js";
 import { MAX_BACKPRESSURE_BYTES } from "./config.js";
 import { UserSession } from "./session.js";
 

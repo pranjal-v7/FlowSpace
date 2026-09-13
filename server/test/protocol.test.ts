@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { RoomManager } from "../src/room.js";
 import { MessageDispatcher } from "../src/dispatcher.js";
-import { ClientMessageSchema } from "../../shared/schemas.js";
+import { ClientMessageSchema } from "../src/shared/schemas.js";
 
 describe("FlowSpace Protocol & Validation Tests", () => {
   let roomManager: RoomManager;

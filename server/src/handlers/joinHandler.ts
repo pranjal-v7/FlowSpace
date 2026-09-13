@@ -3,7 +3,7 @@ import {
   ClientJoinMessage,
   ClientResumeMessage,
   ServerMessage,
-} from "../../../shared/types.js";
+} from "../shared/types.js";
 import { RoomManager } from "../room.js";
 import { createSession, UserSession } from "../session.js";
 

@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
-import { ClientMessageSchema } from "../../shared/schemas.js";
-import { ServerMessage } from "../../shared/types.js";
+import { ClientMessageSchema } from "./shared/schemas.js";
+import { ServerMessage } from "./shared/types.js";
 import {
   handleClearCanvas,
   handleErase,

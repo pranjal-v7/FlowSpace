@@ -1,5 +1,5 @@
 import { WebSocket } from "ws";
-import { ClientPingMessage, ServerMessage } from "../../../shared/types.js";
+import { ClientPingMessage, ServerMessage } from "../shared/types.js";
 
 export function handlePing(socket: WebSocket, message: ClientPingMessage): void {
   if (socket.readyState === WebSocket.OPEN) {

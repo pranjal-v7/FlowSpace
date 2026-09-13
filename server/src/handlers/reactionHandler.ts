@@ -1,4 +1,4 @@
-import { ClientReactionMessage, ServerMessage } from "../../../shared/types.js";
+import { ClientReactionMessage, ServerMessage } from "../shared/types.js";
 import { Room } from "../room.js";
 import { UserSession } from "../session.js";
 

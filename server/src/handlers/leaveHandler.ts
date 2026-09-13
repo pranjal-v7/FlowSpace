@@ -1,5 +1,5 @@
 import { WebSocket } from "ws";
-import { ServerLeaveAckMessage, ServerPresenceLeaveMessage } from "../../../shared/types.js";
+import { ServerLeaveAckMessage, ServerPresenceLeaveMessage } from "../shared/types.js";
 import { Room, RoomManager } from "../room.js";
 import { UserSession } from "../session.js";
 

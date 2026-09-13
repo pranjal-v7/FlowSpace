@@ -1,5 +1,5 @@
-import { ClientCursorSchema } from "../../../shared/schemas.js";
-import { ClientCursorMessage, ServerMessage } from "../../../shared/types.js";
+import { ClientCursorSchema } from "../shared/schemas.js";
+import { ClientCursorMessage, ServerMessage } from "../shared/types.js";
 import { Room } from "../room.js";
 import { UserSession } from "../session.js";
 

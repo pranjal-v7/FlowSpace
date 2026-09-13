@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
 import { SessionRateLimiters } from "./rateLimiter.js";
-import { RemoteCursorSnapshot } from "../../shared/types.js";
+import { RemoteCursorSnapshot } from "./shared/types.js";
 import crypto from "crypto";
 
 export type SessionState = "active" | "reconnecting" | "left";
