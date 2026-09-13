@@ -1,5 +1,5 @@
 import { RemoteCursorSnapshot, ServerCursorMessage } from "../shared/types.js";
-import { Camera } from "../canvas/coordinates.js";
+import { Camera, sanitizeCamera } from "../canvas/coordinates.js";
 
 export interface CursorSample {
   x: number;
@@ -19,6 +19,7 @@ export interface RemoteCursorTrack {
 
 export class RemoteCursorInterpolator {
   private tracks: Map<string, RemoteCursorTrack> = new Map();
+  private domElements: Map<string, HTMLElement | null> = new Map();
   private interpolationDelayMs = 60; // Configurable (50-80ms)
   private rafId: number | null = null;
   private isRunning = false;
@@ -33,10 +34,15 @@ export class RemoteCursorInterpolator {
   }
 
   public setCamera(camera: Camera): void {
-    this.camera = camera;
+    this.camera = sanitizeCamera(camera);
   }
 
   public registerDomElement(userId: string, element: HTMLElement | null): void {
+    if (element) {
+      this.domElements.set(userId, element);
+    } else {
+      this.domElements.delete(userId);
+    }
     const track = this.tracks.get(userId);
     if (track) {
       track.domElement = element;
@@ -52,7 +58,7 @@ export class RemoteCursorInterpolator {
         lastSeq: c.seq,
         currentX: c.x,
         currentY: c.y,
-        domElement: null,
+        domElement: this.domElements.get(c.userId) || null,
       });
     }
   }
@@ -66,7 +72,7 @@ export class RemoteCursorInterpolator {
         lastSeq: -1,
         currentX: message.x,
         currentY: message.y,
-        domElement: null,
+        domElement: this.domElements.get(message.userId) || null,
       };
       this.tracks.set(message.userId, track);
     }
@@ -92,10 +98,12 @@ export class RemoteCursorInterpolator {
 
   public removeUser(userId: string): void {
     this.tracks.delete(userId);
+    this.domElements.delete(userId);
   }
 
   public clear(): void {
     this.tracks.clear();
+    this.domElements.clear();
   }
 
   public start(): void {
@@ -122,6 +130,7 @@ export class RemoteCursorInterpolator {
 
   private renderFrame(): void {
     const renderTime = Date.now() - this.interpolationDelayMs;
+    const safeCam = sanitizeCamera(this.camera);
 
     for (const track of this.tracks.values()) {
       if (track.samples.length === 0) continue;
@@ -153,11 +162,16 @@ export class RemoteCursorInterpolator {
       track.currentX = targetX;
       track.currentY = targetY;
 
-      // Project world coordinates to local screen coordinates
-      if (track.domElement) {
-        const screenX = Math.round(targetX * this.camera.zoom + this.camera.x);
-        const screenY = Math.round(targetY * this.camera.zoom + this.camera.y);
-        track.domElement.style.transform = `translate3d(${screenX}px, ${screenY}px, 0)`;
+      // Ensure DOM element is hooked up
+      const domEl = track.domElement || this.domElements.get(track.userId);
+      if (domEl) {
+        track.domElement = domEl;
+        // Project world coordinates to local screen coordinates
+        const screenX = Math.round(targetX * safeCam.zoom + safeCam.x);
+        const screenY = Math.round(targetY * safeCam.zoom + safeCam.y);
+        if (Number.isFinite(screenX) && Number.isFinite(screenY)) {
+          domEl.style.transform = `translate3d(${screenX}px, ${screenY}px, 0)`;
+        }
       }
     }
   }

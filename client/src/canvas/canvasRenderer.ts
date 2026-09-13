@@ -1,5 +1,5 @@
 import { CanvasObject, CanvasShapeObject, CanvasStrokeObject, CanvasTextObject } from "../shared/types.js";
-import { Camera } from "./coordinates.js";
+import { Camera, sanitizeCamera } from "./coordinates.js";
 
 export class CanvasRenderer {
   private canvas: HTMLCanvasElement;
@@ -16,13 +16,13 @@ export class CanvasRenderer {
 
   public handleResize(): void {
     const rect = this.canvas.getBoundingClientRect();
-    this.dpr = window.devicePixelRatio || 1;
+    // Cap DPR at 3 to prevent GPU memory bloat on ultra-dense mobile screens
+    this.dpr = Math.min(window.devicePixelRatio || 1, 3);
     this.canvas.width = Math.round(rect.width * this.dpr);
     this.canvas.height = Math.round(rect.height * this.dpr);
     this.canvas.style.width = `${rect.width}px`;
     this.canvas.style.height = `${rect.height}px`;
-    this.ctx.resetTransform();
-    this.ctx.scale(this.dpr, this.dpr);
+    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
   }
 
   public render(
@@ -34,45 +34,58 @@ export class CanvasRenderer {
     const width = this.canvas.width / this.dpr;
     const height = this.canvas.height / this.dpr;
 
+    const safeCam = sanitizeCamera(camera);
+
     // Clear full canvas viewport
     this.ctx.clearRect(0, 0, width, height);
 
     // 1. Draw infinite background grid (dots) aligned with camera
-    this.drawBackgroundGrid(width, height, camera);
+    this.drawBackgroundGrid(width, height, safeCam);
 
     // 2. Apply camera transform for world coordinates
     this.ctx.save();
-    this.ctx.translate(camera.x, camera.y);
-    this.ctx.scale(camera.zoom, camera.zoom);
+    this.ctx.translate(safeCam.x, safeCam.y);
+    this.ctx.scale(safeCam.zoom, safeCam.zoom);
 
     // Render all persistent world objects
     for (const obj of objects) {
-      this.renderObject(obj, obj.objectId === highlightedObjectId);
+      this.renderObject(obj, obj.objectId === highlightedObjectId, safeCam.zoom);
     }
 
     // Render active drawing/shape preview
     if (previewObject) {
-      this.renderObject(previewObject, false);
+      this.renderObject(previewObject, false, safeCam.zoom);
     }
 
     this.ctx.restore();
   }
 
   private drawBackgroundGrid(viewportWidth: number, viewportHeight: number, camera: Camera): void {
-    const baseGridSize = 40;
-    // Adapt grid scale when zoomed out/in for clean visuals
-    let gridSize = baseGridSize;
-    while (gridSize * camera.zoom < 24) gridSize *= 2;
-    while (gridSize * camera.zoom > 100) gridSize /= 2;
+    const zoom = Number.isFinite(camera.zoom) && camera.zoom > 0 ? camera.zoom : 1;
+    const camX = Number.isFinite(camera.x) ? camera.x : 0;
+    const camY = Number.isFinite(camera.y) ? camera.y : 0;
 
-    const screenGridSize = gridSize * camera.zoom;
-    const startX = ((camera.x % screenGridSize) + screenGridSize) % screenGridSize;
-    const startY = ((camera.y % screenGridSize) + screenGridSize) % screenGridSize;
+    const baseGridSize = 40;
+    let gridSize = baseGridSize;
+    let iter = 0;
+    while (gridSize * zoom < 24 && iter < 10) {
+      gridSize *= 2;
+      iter++;
+    }
+    iter = 0;
+    while (gridSize * zoom > 100 && iter < 10) {
+      gridSize /= 2;
+      iter++;
+    }
+
+    const screenGridSize = Math.max(16, gridSize * zoom);
+    const startX = ((camX % screenGridSize) + screenGridSize) % screenGridSize;
+    const startY = ((camY % screenGridSize) + screenGridSize) % screenGridSize;
 
     this.ctx.save();
     this.ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
 
-    const dotRadius = Math.max(1, Math.min(2, 1.2 * (camera.zoom < 0.5 ? 0.8 : 1)));
+    const dotRadius = Math.max(1, Math.min(2, 1.2 * (zoom < 0.5 ? 0.8 : 1)));
     for (let x = startX; x < viewportWidth; x += screenGridSize) {
       for (let y = startY; y < viewportHeight; y += screenGridSize) {
         this.ctx.beginPath();
@@ -85,7 +98,8 @@ export class CanvasRenderer {
 
   private renderObject(
     obj: CanvasObject,
-    isHighlighted: boolean
+    isHighlighted: boolean,
+    cameraZoom: number
   ): void {
     this.ctx.save();
 
@@ -96,10 +110,10 @@ export class CanvasRenderer {
 
     switch (obj.type) {
       case "stroke":
-        this.renderStroke(obj);
+        this.renderStroke(obj, cameraZoom);
         break;
       case "shape":
-        this.renderShape(obj);
+        this.renderShape(obj, cameraZoom);
         break;
       case "text":
         this.renderText(obj);
@@ -113,8 +127,9 @@ export class CanvasRenderer {
    * Smooth pen stroke rendering using quadratic Bézier midpoint interpolation.
    * Produces natural, continuous handwritten curves for both live local previews
    * and completed/remote strokes without polygon-like straight line artifacts.
+   * Clamps min screen pixel width to 1.2px so strokes remain visible when zoomed out on phones.
    */
-  private renderStroke(stroke: CanvasStrokeObject): void {
+  private renderStroke(stroke: CanvasStrokeObject, cameraZoom: number = 1): void {
     const pts = stroke.points;
     const len = pts.length;
     if (len < 1) return;
@@ -122,7 +137,10 @@ export class CanvasRenderer {
     this.ctx.save();
     this.ctx.lineCap = "round";
     this.ctx.lineJoin = "round";
-    this.ctx.lineWidth = stroke.size;
+
+    // Guarantee that stroke line width is never thinner than 1.2 screen pixels on phone/desktop
+    const minWorldLineWidth = 1.2 / Math.max(0.01, cameraZoom);
+    this.ctx.lineWidth = Math.max(stroke.size, minWorldLineWidth);
 
     if (stroke.isHighlighter) {
       this.ctx.globalAlpha = stroke.opacity || 0.45;
@@ -134,9 +152,11 @@ export class CanvasRenderer {
     }
 
     if (len === 1) {
-      // Single tap / click dot
+      // Single tap / click dot - clamp min dot radius to 1.5 screen pixels
+      const minDotRadius = 1.5 / Math.max(0.01, cameraZoom);
+      const dotRadius = Math.max(stroke.size / 2, minDotRadius);
       this.ctx.beginPath();
-      this.ctx.arc(pts[0][0], pts[0][1], stroke.size / 2, 0, Math.PI * 2);
+      this.ctx.arc(pts[0][0], pts[0][1], dotRadius, 0, Math.PI * 2);
       this.ctx.fillStyle = stroke.color;
       this.ctx.fill();
     } else if (len === 2) {
@@ -164,10 +184,11 @@ export class CanvasRenderer {
     this.ctx.restore();
   }
 
-  private renderShape(shape: CanvasShapeObject): void {
+  private renderShape(shape: CanvasShapeObject, cameraZoom: number = 1): void {
     this.ctx.save();
     this.ctx.globalAlpha = shape.opacity || 1;
-    this.ctx.lineWidth = shape.size;
+    const minWorldLineWidth = 1.2 / Math.max(0.01, cameraZoom);
+    this.ctx.lineWidth = Math.max(shape.size, minWorldLineWidth);
     this.ctx.strokeStyle = shape.color;
     this.ctx.fillStyle = shape.color;
 

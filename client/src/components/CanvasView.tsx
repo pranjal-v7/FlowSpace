@@ -19,6 +19,7 @@ import {
   screenToWorld,
   worldToScreen,
   zoomAtScreenPoint,
+  sanitizeCamera,
   DEFAULT_ZOOM,
 } from "../canvas/coordinates.js";
 import { Minus, Plus } from "lucide-react";
@@ -93,7 +94,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
 
   // Touch tracking for pinch-zoom and 2-finger panning
   const touchPointersRef = useRef<Map<number, { clientX: number; clientY: number }>>(new Map());
-  const pinchStartRef = useRef<{ dist: number; center: { x: number; y: number }; cam: Camera } | null>(null);
+  const lastPinchRef = useRef<{ dist: number; center: { x: number; y: number } } | null>(null);
+  const touchStartedStrokeIdRef = useRef<string | null>(null);
 
   // Drawing state
   const isPointerDownRef = useRef(false);
@@ -225,15 +227,29 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
 
     // Multi-touch Pinch / Pan handler for touchscreens
     if (touchPointersRef.current.size >= 2) {
-      // Cancel any active drawing
+      // Clean up any single-finger stroke created before the second finger touched down
       if (currentStrokeRef.current) {
+        wsClient.send({
+          type: "erase",
+          objectId: currentStrokeRef.current.objectId,
+        });
         currentStrokeRef.current = null;
         strokeBatchRef.current = [];
       }
+      touchStartedStrokeIdRef.current = null;
       if (previewShapeRef.current) {
         previewShapeRef.current = null;
       }
       isPointerDownRef.current = false;
+
+      // Release any active pointer captures so both touch pointers receive events smoothly
+      try {
+        for (const pointerId of touchPointersRef.current.keys()) {
+          e.currentTarget.releasePointerCapture(pointerId);
+        }
+      } catch {
+        // ignore
+      }
 
       const pts = Array.from(touchPointersRef.current.values());
       const dist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
@@ -242,7 +258,10 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         x: (pts[0].clientX + pts[1].clientX) / 2 - rect.left,
         y: (pts[0].clientY + pts[1].clientY) / 2 - rect.top,
       };
-      pinchStartRef.current = { dist, center, cam: { ...cameraRef.current } };
+      lastPinchRef.current = { dist, center };
+      if (rendererRef.current) {
+        rendererRef.current.render(objectsRef.current, null, highlightedObjectIdRef.current, cameraRef.current);
+      }
       return;
     }
 
@@ -299,6 +318,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
 
       currentStrokeRef.current = strokeObj;
       strokeBatchRef.current = [[worldX, worldY]];
+      if (e.pointerType === "touch") {
+        touchStartedStrokeIdRef.current = strokeId;
+      }
 
       // Dispatch initial stroke point in world coordinates
       wsClient.send({
@@ -363,8 +385,8 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       touchPointersRef.current.set(e.pointerId, { clientX: e.clientX, clientY: e.clientY });
     }
 
-    // 1. Two-finger touch Pinch / Pan active
-    if (touchPointersRef.current.size >= 2 && pinchStartRef.current) {
+    // 1. Two-finger touch Pinch / Pan active with smooth per-frame incremental deltas
+    if (touchPointersRef.current.size >= 2) {
       const pts = Array.from(touchPointersRef.current.values());
       const newDist = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY);
       const newCenter = {
@@ -372,21 +394,33 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         y: (pts[0].clientY + pts[1].clientY) / 2 - rect.top,
       };
 
-      const scale = newDist / (pinchStartRef.current.dist || 1);
-      const nextZoom = pinchStartRef.current.cam.zoom * scale;
+      if (lastPinchRef.current) {
+        const prev = lastPinchRef.current;
+        let zoomScale = 1.0;
+        if (prev.dist > 8 && newDist > 8) {
+          // Clamp per-frame incremental scale to prevent sudden jumps
+          const rawScale = newDist / prev.dist;
+          zoomScale = Math.max(0.7, Math.min(1.4, rawScale));
+        }
+        const panDx = newCenter.x - prev.center.x;
+        const panDy = newCenter.y - prev.center.y;
 
-      const updatedCam = zoomAtScreenPoint(
-        pinchStartRef.current.center.x,
-        pinchStartRef.current.center.y,
-        pinchStartRef.current.cam,
-        nextZoom
-      );
+        setCamera((prevCam) => {
+          const nextCam = zoomAtScreenPoint(
+            newCenter.x,
+            newCenter.y,
+            prevCam,
+            prevCam.zoom * zoomScale
+          );
+          return sanitizeCamera({
+            x: nextCam.x + panDx,
+            y: nextCam.y + panDy,
+            zoom: nextCam.zoom,
+          });
+        });
+      }
 
-      // Add pan delta
-      updatedCam.x += newCenter.x - pinchStartRef.current.center.x;
-      updatedCam.y += newCenter.y - pinchStartRef.current.center.y;
-
-      setCamera(updatedCam);
+      lastPinchRef.current = { dist: newDist, center: newCenter };
       return;
     }
 
@@ -479,8 +513,9 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     }
 
     if (touchPointersRef.current.size < 2) {
-      pinchStartRef.current = null;
+      lastPinchRef.current = null;
     }
+    touchStartedStrokeIdRef.current = null;
 
     if (isPanningRef.current) {
       isPanningRef.current = false;
@@ -633,14 +668,14 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     setEditingText(null);
   };
 
-  // Zoom button handlers
+  // Zoom button handlers (guaranteed sanitized camera state)
   const handleZoomIn = (e?: React.MouseEvent | React.PointerEvent) => {
     if (e) e.stopPropagation();
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    setCamera((prev) => zoomAtScreenPoint(centerX, centerY, prev, prev.zoom * 1.25));
+    setCamera((prev) => sanitizeCamera(zoomAtScreenPoint(centerX, centerY, prev, prev.zoom * 1.25)));
   };
 
   const handleZoomOut = (e?: React.MouseEvent | React.PointerEvent) => {
@@ -649,7 +684,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     const rect = containerRef.current.getBoundingClientRect();
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    setCamera((prev) => zoomAtScreenPoint(centerX, centerY, prev, prev.zoom * 0.8));
+    setCamera((prev) => sanitizeCamera(zoomAtScreenPoint(centerX, centerY, prev, prev.zoom * 0.8)));
   };
 
   const handleResetZoom = (e?: React.MouseEvent | React.PointerEvent) => {
@@ -658,7 +693,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     const rect = containerRef.current.getBoundingClientRect();
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    setCamera((prev) => zoomAtScreenPoint(centerX, centerY, prev, 1.0));
+    setCamera((prev) => sanitizeCamera(zoomAtScreenPoint(centerX, centerY, prev, 1.0)));
   };
 
   // Determine cursor CSS class

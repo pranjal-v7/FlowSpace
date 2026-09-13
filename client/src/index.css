@@ -63,7 +63,9 @@
 html, body, #root {
   width: 100%;
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
+  overscroll-behavior: none;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -98,6 +100,8 @@ button {
   flex-direction: column;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   position: relative;
   background: #f8fafc;
 }
@@ -435,7 +439,9 @@ button {
   overflow: hidden;
   width: 100%;
   height: calc(100vh - var(--header-height));
+  height: calc(100dvh - var(--header-height));
   background-color: #ffffff;
+  touch-action: none;
 }
 
 .canvas-viewport {
