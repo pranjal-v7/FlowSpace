@@ -22,7 +22,7 @@ import {
   sanitizeCamera,
   DEFAULT_ZOOM,
 } from "../canvas/coordinates.js";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, Home } from "lucide-react";
 
 interface CanvasViewProps {
   wsClient: RealtimeWebSocketClient;
@@ -92,6 +92,78 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     camY: 0,
   });
 
+  // Camera smooth transition state
+  const animRef = useRef<{
+    startX: number;
+    startY: number;
+    targetX: number;
+    targetY: number;
+    startTime: number;
+    duration: number;
+    rafId: number;
+  } | null>(null);
+
+  const cancelCameraAnimation = useCallback(() => {
+    if (animRef.current) {
+      cancelAnimationFrame(animRef.current.rafId);
+      animRef.current = null;
+    }
+  }, []);
+
+  const animateCameraTo = useCallback((targetX: number, targetY: number) => {
+    cancelCameraAnimation();
+
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReducedMotion) {
+      setCamera((prev) => sanitizeCamera({ ...prev, x: targetX, y: targetY }));
+      return;
+    }
+
+    const startX = cameraRef.current.x;
+    const startY = cameraRef.current.y;
+    const startTime = performance.now();
+    const duration = 280; // 280ms cubic ease-out
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      // Cubic ease-out
+      const ease = 1 - Math.pow(1 - progress, 3);
+
+      const currentX = startX + (targetX - startX) * ease;
+      const currentY = startY + (targetY - startY) * ease;
+
+      setCamera((prev) => sanitizeCamera({ ...prev, x: currentX, y: currentY }));
+
+      if (progress < 1) {
+        if (animRef.current) {
+          animRef.current.rafId = requestAnimationFrame(step);
+        }
+      } else {
+        animRef.current = null;
+      }
+    };
+
+    animRef.current = {
+      startX,
+      startY,
+      targetX,
+      targetY,
+      startTime,
+      duration,
+      rafId: requestAnimationFrame(step),
+    };
+  }, [cancelCameraAnimation]);
+
+  useEffect(() => {
+    return () => {
+      cancelCameraAnimation();
+    };
+  }, [cancelCameraAnimation]);
+
   // Touch tracking for pinch-zoom and 2-finger panning
   const touchPointersRef = useRef<Map<number, { clientX: number; clientY: number }>>(new Map());
   const lastPinchRef = useRef<{ dist: number; center: { x: number; y: number } } | null>(null);
@@ -160,6 +232,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       if (!containerRef.current || !canvasRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       onContainerRectChange(rect);
+      interpolator.setViewport(rect.width, rect.height);
       renderer.handleResize();
       renderer.render(objectsRef.current, null, highlightedObjectIdRef.current, cameraRef.current);
     };
@@ -183,6 +256,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   // Wheel event for zoom focused towards cursor, and 2-finger trackpad scroll pan
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
+    cancelCameraAnimation();
     e.preventDefault();
 
     const rect = containerRef.current.getBoundingClientRect();
@@ -221,6 +295,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   // Handle pointer down
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!containerRef.current || !currentUserId) return;
+    cancelCameraAnimation();
 
     // Track touch pointers for multi-touch pinch/pan
     touchPointersRef.current.set(e.pointerId, { clientX: e.clientX, clientY: e.clientY });
@@ -668,6 +743,28 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     setEditingText(null);
   };
 
+  // Jump to off-screen remote collaborator's location
+  const handleNavigateToUser = useCallback((userId: string) => {
+    if (!containerRef.current) return;
+    const worldPos = interpolator.getTrackWorldPosition(userId);
+    if (!worldPos) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const currentZoom = cameraRef.current.zoom;
+
+    // Center collaborator's world position on screen
+    const targetCamX = rect.width / 2 - worldPos.x * currentZoom;
+    const targetCamY = rect.height / 2 - worldPos.y * currentZoom;
+
+    animateCameraTo(targetCamX, targetCamY);
+  }, [interpolator, animateCameraTo]);
+
+  // Return to default world location (0, 0) while preserving zoom
+  const handleGoHome = (e?: React.MouseEvent | React.PointerEvent) => {
+    if (e) e.stopPropagation();
+    animateCameraTo(0, 0);
+  };
+
   // Zoom button handlers (guaranteed sanitized camera state)
   const handleZoomIn = (e?: React.MouseEvent | React.PointerEvent) => {
     if (e) e.stopPropagation();
@@ -723,11 +820,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     >
       <canvas ref={canvasRef} className="canvas-viewport" />
 
-      {/* Direct DOM Remote Cursor Overlay projected via Camera */}
+      {/* Direct DOM Remote Cursor & Off-Screen Indicators Overlay */}
       <RemoteCursorOverlay
         participants={participants}
         currentUserId={currentUserId}
         interpolator={interpolator}
+        onNavigateToUser={handleNavigateToUser}
       />
 
       {/* Inline Text Editor Overlay in Camera Screen Projection */}
@@ -794,6 +892,15 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
           aria-label="Zoom In"
         >
           <Plus size={15} />
+        </button>
+        <button
+          type="button"
+          className="zoom-btn home-btn"
+          onClick={handleGoHome}
+          title="Return to home view"
+          aria-label="Return to home view"
+        >
+          <Home size={14} />
         </button>
       </div>
     </div>
