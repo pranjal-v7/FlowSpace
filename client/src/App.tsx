@@ -28,9 +28,21 @@ import { RemoteCursorInterpolator } from "./realtime/interpolator.js";
 import { TelemetryManager } from "./realtime/telemetry.js";
 import { RealtimeWebSocketClient } from "./realtime/wsClient.js";
 
-const WS_SERVER_URL =
-  (import.meta as any).env?.VITE_WS_URL ||
-  `ws://${window.location.hostname}:4000`;
+function getWebSocketUrl(): string {
+  const envUrl = (import.meta as any).env?.VITE_WS_URL;
+  if (envUrl && typeof envUrl === "string" && envUrl.trim().length > 0) {
+    const trimmed = envUrl.trim();
+    if (trimmed.startsWith("https://")) return trimmed.replace("https://", "wss://");
+    if (trimmed.startsWith("http://")) return trimmed.replace("http://", "ws://");
+    return trimmed;
+  }
+  const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
+  const protocol = isHttps ? "wss" : "ws";
+  const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
+  return `${protocol}://${host}:4000`;
+}
+
+const WS_SERVER_URL = getWebSocketUrl();
 
 export const App: React.FC = () => {
   // Core realtime engines (persistent across renders)
