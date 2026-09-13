@@ -49,13 +49,13 @@ export const ParticipantSchema = z.object({
 export const RemoteCursorSnapshotSchema = z.object({
   userId: z.string(),
   seq: z.number().int().nonnegative(),
-  x: z.number().finite().min(0).max(1),
-  y: z.number().finite().min(0).max(1),
+  x: z.number().finite(),
+  y: z.number().finite(),
   timestamp: z.number().int().positive(),
 });
 
 // ==========================================
-// Canvas Object Schemas
+// Canvas Object Schemas (World Coordinates)
 // ==========================================
 export const StrokeObjectSchema = z.object({
   objectId: z.string().min(1),
@@ -65,7 +65,7 @@ export const StrokeObjectSchema = z.object({
   size: z.number().min(1).max(64),
   opacity: z.number().min(0.01).max(1),
   isHighlighter: z.boolean().default(false),
-  points: z.array(z.tuple([z.number(), z.number()])).max(1000),
+  points: z.array(z.tuple([z.number().finite(), z.number().finite()])).max(1000),
   createdAt: z.number().int().positive(),
 });
 
@@ -77,10 +77,10 @@ export const ShapeObjectSchema = z.object({
   color: z.string(),
   size: z.number().min(1).max(32),
   opacity: z.number().min(0.01).max(1).default(1),
-  startX: z.number().finite().min(0).max(1),
-  startY: z.number().finite().min(0).max(1),
-  endX: z.number().finite().min(0).max(1),
-  endY: z.number().finite().min(0).max(1),
+  startX: z.number().finite(),
+  startY: z.number().finite(),
+  endX: z.number().finite(),
+  endY: z.number().finite(),
   fill: z.boolean().default(false),
   createdAt: z.number().int().positive(),
 });
@@ -89,8 +89,8 @@ export const TextObjectSchema = z.object({
   objectId: z.string().min(1),
   creatorId: z.string().min(1),
   type: z.literal("text"),
-  x: z.number().finite().min(0).max(1),
-  y: z.number().finite().min(0).max(1),
+  x: z.number().finite(),
+  y: z.number().finite(),
   content: z.string().min(1).max(MAX_TEXT_LENGTH),
   color: z.string(),
   font: z.string(),
@@ -126,8 +126,8 @@ export const ClientResumeSchema = z.object({
 export const ClientCursorSchema = z.object({
   type: z.literal("cursor"),
   seq: z.number().int().nonnegative(),
-  x: z.number().finite().min(0).max(1),
-  y: z.number().finite().min(0).max(1),
+  x: z.number().finite(),
+  y: z.number().finite(),
   timestamp: z.number().int().positive(),
 });
 
@@ -139,8 +139,8 @@ export const ClientStrokeSchema = z.object({
   opacity: z.number().min(0.01).max(1).default(1),
   isHighlighter: z.boolean().default(false),
   points: z.array(z.tuple([
-    z.number().finite().min(0).max(1),
-    z.number().finite().min(0).max(1)
+    z.number().finite(),
+    z.number().finite()
   ])).min(1).max(MAX_POINTS_PER_STROKE_MSG),
 });
 
@@ -156,18 +156,18 @@ export const ClientShapeCreateSchema = z.object({
   color: z.string(),
   size: z.number().min(1).max(32),
   opacity: z.number().min(0.01).max(1).default(1),
-  startX: z.number().finite().min(0).max(1),
-  startY: z.number().finite().min(0).max(1),
-  endX: z.number().finite().min(0).max(1),
-  endY: z.number().finite().min(0).max(1),
+  startX: z.number().finite(),
+  startY: z.number().finite(),
+  endX: z.number().finite(),
+  endY: z.number().finite(),
   fill: z.boolean().default(false),
 });
 
 export const ClientTextCreateSchema = z.object({
   type: z.literal("text_create"),
   textId: z.string().min(1).max(64),
-  x: z.number().finite().min(0).max(1),
-  y: z.number().finite().min(0).max(1),
+  x: z.number().finite(),
+  y: z.number().finite(),
   content: z.string().min(1).max(MAX_TEXT_LENGTH),
   color: z.string(),
   font: z.string(),
@@ -183,8 +183,8 @@ export const ClientReactionSchema = z.object({
   type: z.literal("reaction"),
   id: z.string().min(1).max(64),
   emoji: z.string().min(1).max(8),
-  x: z.number().finite().min(0).max(1),
-  y: z.number().finite().min(0).max(1),
+  x: z.number().finite(),
+  y: z.number().finite(),
 });
 
 export const ClientLeaveSchema = z.object({
@@ -259,8 +259,8 @@ export const ServerCursorSchema = z.object({
   type: z.literal("cursor"),
   userId: z.string(),
   seq: z.number().int().nonnegative(),
-  x: z.number().finite().min(0).max(1),
-  y: z.number().finite().min(0).max(1),
+  x: z.number().finite(),
+  y: z.number().finite(),
   timestamp: z.number().int().positive(),
 });
 
@@ -272,7 +272,7 @@ export const ServerStrokeSchema = z.object({
   size: z.number(),
   opacity: z.number(),
   isHighlighter: z.boolean().default(false),
-  points: z.array(z.tuple([z.number(), z.number()])),
+  points: z.array(z.tuple([z.number().finite(), z.number().finite()])),
 });
 
 export const ServerStrokeEndSchema = z.object({
@@ -302,8 +302,8 @@ export const ServerReactionSchema = z.object({
   userId: z.string(),
   id: z.string(),
   emoji: z.string(),
-  x: z.number(),
-  y: z.number(),
+  x: z.number().finite(),
+  y: z.number().finite(),
   timestamp: z.number().optional(),
 });
 

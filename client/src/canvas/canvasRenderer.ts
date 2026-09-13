@@ -1,4 +1,5 @@
 import { CanvasObject, CanvasShapeObject, CanvasStrokeObject, CanvasTextObject } from "../shared/types.js";
+import { Camera } from "./coordinates.js";
 
 export class CanvasRenderer {
   private canvas: HTMLCanvasElement;
@@ -25,28 +26,63 @@ export class CanvasRenderer {
   public render(
     objects: CanvasObject[],
     previewObject: CanvasObject | null = null,
-    highlightedObjectId: string | null = null
+    highlightedObjectId: string | null = null,
+    camera: Camera = { x: 0, y: 0, zoom: 1 }
   ): void {
     const width = this.canvas.width / this.dpr;
     const height = this.canvas.height / this.dpr;
 
+    // Clear full canvas viewport
     this.ctx.clearRect(0, 0, width, height);
 
-    // 1. Render all persistent objects
+    // 1. Draw infinite background grid (dots) aligned with camera
+    this.drawBackgroundGrid(width, height, camera);
+
+    // 2. Apply camera transform for world coordinates
+    this.ctx.save();
+    this.ctx.translate(camera.x, camera.y);
+    this.ctx.scale(camera.zoom, camera.zoom);
+
+    // Render all persistent world objects
     for (const obj of objects) {
-      this.renderObject(obj, width, height, obj.objectId === highlightedObjectId);
+      this.renderObject(obj, obj.objectId === highlightedObjectId);
     }
 
-    // 2. Render active drawing/shape preview
+    // Render active drawing/shape preview
     if (previewObject) {
-      this.renderObject(previewObject, width, height, false);
+      this.renderObject(previewObject, false);
     }
+
+    this.ctx.restore();
+  }
+
+  private drawBackgroundGrid(viewportWidth: number, viewportHeight: number, camera: Camera): void {
+    const baseGridSize = 40;
+    // Adapt grid scale when zoomed out/in for clean visuals
+    let gridSize = baseGridSize;
+    while (gridSize * camera.zoom < 24) gridSize *= 2;
+    while (gridSize * camera.zoom > 100) gridSize /= 2;
+
+    const screenGridSize = gridSize * camera.zoom;
+    const startX = ((camera.x % screenGridSize) + screenGridSize) % screenGridSize;
+    const startY = ((camera.y % screenGridSize) + screenGridSize) % screenGridSize;
+
+    this.ctx.save();
+    this.ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+
+    const dotRadius = Math.max(1, Math.min(2, 1.2 * (camera.zoom < 0.5 ? 0.8 : 1)));
+    for (let x = startX; x < viewportWidth; x += screenGridSize) {
+      for (let y = startY; y < viewportHeight; y += screenGridSize) {
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+    }
+    this.ctx.restore();
   }
 
   private renderObject(
     obj: CanvasObject,
-    width: number,
-    height: number,
     isHighlighted: boolean
   ): void {
     this.ctx.save();
@@ -58,20 +94,20 @@ export class CanvasRenderer {
 
     switch (obj.type) {
       case "stroke":
-        this.renderStroke(obj, width, height);
+        this.renderStroke(obj);
         break;
       case "shape":
-        this.renderShape(obj, width, height);
+        this.renderShape(obj);
         break;
       case "text":
-        this.renderText(obj, width, height);
+        this.renderText(obj);
         break;
     }
 
     this.ctx.restore();
   }
 
-  private renderStroke(stroke: CanvasStrokeObject, width: number, height: number): void {
+  private renderStroke(stroke: CanvasStrokeObject): void {
     if (stroke.points.length < 1) return;
 
     this.ctx.save();
@@ -89,8 +125,8 @@ export class CanvasRenderer {
     }
 
     this.ctx.beginPath();
-    const startX = stroke.points[0][0] * width;
-    const startY = stroke.points[0][1] * height;
+    const startX = stroke.points[0][0];
+    const startY = stroke.points[0][1];
     this.ctx.moveTo(startX, startY);
 
     if (stroke.points.length === 1) {
@@ -99,8 +135,8 @@ export class CanvasRenderer {
       this.ctx.fill();
     } else {
       for (let i = 1; i < stroke.points.length; i++) {
-        const px = stroke.points[i][0] * width;
-        const py = stroke.points[i][1] * height;
+        const px = stroke.points[i][0];
+        const py = stroke.points[i][1];
         this.ctx.lineTo(px, py);
       }
       this.ctx.stroke();
@@ -109,17 +145,17 @@ export class CanvasRenderer {
     this.ctx.restore();
   }
 
-  private renderShape(shape: CanvasShapeObject, width: number, height: number): void {
+  private renderShape(shape: CanvasShapeObject): void {
     this.ctx.save();
     this.ctx.globalAlpha = shape.opacity || 1;
     this.ctx.lineWidth = shape.size;
     this.ctx.strokeStyle = shape.color;
     this.ctx.fillStyle = shape.color;
 
-    const x1 = shape.startX * width;
-    const y1 = shape.startY * height;
-    const x2 = shape.endX * width;
-    const y2 = shape.endY * height;
+    const x1 = shape.startX;
+    const y1 = shape.startY;
+    const x2 = shape.endX;
+    const y2 = shape.endY;
 
     switch (shape.shapeType) {
       case "rectangle": {
@@ -141,7 +177,7 @@ export class CanvasRenderer {
         const centerX = Math.min(x1, x2) + radiusX;
         const centerY = Math.min(y1, y2) + radiusY;
         this.ctx.beginPath();
-        this.ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+        this.ctx.ellipse(centerX, centerY, Math.max(0.1, radiusX), Math.max(0.1, radiusY), 0, 0, Math.PI * 2);
         if (shape.fill) {
           this.ctx.fill();
         } else {
@@ -193,14 +229,14 @@ export class CanvasRenderer {
     this.ctx.fill();
   }
 
-  private renderText(text: CanvasTextObject, width: number, height: number): void {
+  private renderText(text: CanvasTextObject): void {
     this.ctx.save();
     this.ctx.fillStyle = text.color;
     this.ctx.font = `${text.fontSize}px ${text.font}`;
     this.ctx.textBaseline = "top";
 
-    const px = text.x * width;
-    const py = text.y * height;
+    const px = text.x;
+    const py = text.y;
 
     const lines = text.content.split("\n");
     const lineHeight = text.fontSize * 1.25;

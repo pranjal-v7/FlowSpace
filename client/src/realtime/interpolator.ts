@@ -1,4 +1,5 @@
 import { RemoteCursorSnapshot, ServerCursorMessage } from "../shared/types.js";
+import { Camera } from "../canvas/coordinates.js";
 
 export interface CursorSample {
   x: number;
@@ -21,7 +22,7 @@ export class RemoteCursorInterpolator {
   private interpolationDelayMs = 60; // Configurable (50-80ms)
   private rafId: number | null = null;
   private isRunning = false;
-  private containerRect: DOMRect | null = null;
+  private camera: Camera = { x: 0, y: 0, zoom: 1 };
 
   public setInterpolationDelay(delayMs: number): void {
     this.interpolationDelayMs = Math.max(10, Math.min(250, delayMs));
@@ -31,8 +32,8 @@ export class RemoteCursorInterpolator {
     return this.interpolationDelayMs;
   }
 
-  public setContainerRect(rect: DOMRect | null): void {
-    this.containerRect = rect;
+  public setCamera(camera: Camera): void {
+    this.camera = camera;
   }
 
   public registerDomElement(userId: string, element: HTMLElement | null): void {
@@ -120,11 +121,7 @@ export class RemoteCursorInterpolator {
   }
 
   private renderFrame(): void {
-    if (!this.containerRect) return;
-
     const renderTime = Date.now() - this.interpolationDelayMs;
-    const width = this.containerRect.width;
-    const height = this.containerRect.height;
 
     for (const track of this.tracks.values()) {
       if (track.samples.length === 0) continue;
@@ -144,7 +141,7 @@ export class RemoteCursorInterpolator {
         const dt = p1.timestamp - p0.timestamp;
         if (dt > 0) {
           const t = Math.max(0, Math.min(1, (renderTime - p0.timestamp) / dt));
-          // Linear interpolation (PRD Section 31)
+          // Linear interpolation in world coordinates
           targetX = p0.x + (p1.x - p0.x) * t;
           targetY = p0.y + (p1.y - p0.y) * t;
         } else {
@@ -156,11 +153,11 @@ export class RemoteCursorInterpolator {
       track.currentX = targetX;
       track.currentY = targetY;
 
-      // Update DOM element transform directly with GPU acceleration
+      // Project world coordinates to local screen coordinates
       if (track.domElement) {
-        const pixelX = Math.round(targetX * width);
-        const pixelY = Math.round(targetY * height);
-        track.domElement.style.transform = `translate3d(${pixelX}px, ${pixelY}px, 0)`;
+        const screenX = Math.round(targetX * this.camera.zoom + this.camera.x);
+        const screenY = Math.round(targetY * this.camera.zoom + this.camera.y);
+        track.domElement.style.transform = `translate3d(${screenX}px, ${screenY}px, 0)`;
       }
     }
   }

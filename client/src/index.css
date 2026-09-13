@@ -626,6 +626,98 @@ button {
 }
 
 /* ==========================================================================
+   CANVAS ZOOM CONTROLS ([ - ] 100% [ + ]) & CURSOR STATES
+   ========================================================================== */
+
+.canvas-zoom-control {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  z-index: 35;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-panel);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.zoom-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.zoom-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-glass-hover);
+}
+
+.zoom-btn:active {
+  transform: scale(0.92);
+}
+
+.zoom-label-btn {
+  height: 30px;
+  min-width: 48px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.zoom-label-btn:hover {
+  color: var(--accent-primary);
+  background: var(--bg-glass-hover);
+}
+
+.zoom-label-btn:active {
+  transform: scale(0.95);
+}
+
+.cursor-grab {
+  cursor: grab !important;
+}
+
+.cursor-grab:active {
+  cursor: grabbing !important;
+}
+
+.cursor-crosshair {
+  cursor: crosshair;
+}
+
+.cursor-eraser {
+  cursor: cell;
+}
+
+.cursor-text {
+  cursor: text;
+}
+
+/* ==========================================================================
    PRESENCE SIDEBAR & PARTICIPANT LIST (EXPANDED & MINIMIZED)
    ========================================================================== */
 
@@ -2064,6 +2156,25 @@ html, body, #root, .app-container {
     width: 28px;
     height: 28px;
     font-size: 1rem;
+  }
+
+  /* Zoom Controls for Mobile */
+  .canvas-zoom-control {
+    bottom: 4.8rem;
+    right: 0.65rem;
+    padding: 2px;
+  }
+
+  .zoom-btn {
+    width: 26px;
+    height: 26px;
+  }
+
+  .zoom-label-btn {
+    height: 26px;
+    min-width: 40px;
+    font-size: 0.72rem;
+    padding: 0 4px;
   }
 }
 

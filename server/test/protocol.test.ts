@@ -31,24 +31,24 @@ describe("FlowSpace Protocol & Validation Tests", () => {
     expect(invalidRes.success).toBe(false);
   });
 
-  it("should validate cursor coordinates within [0, 1]", () => {
+  it("should validate finite cursor world coordinates", () => {
     const validCursor = {
       type: "cursor",
       seq: 1,
-      x: 0.5,
-      y: 0.25,
+      x: 1250.5,
+      y: -420.25,
       timestamp: Date.now(),
     };
     expect(ClientMessageSchema.safeParse(validCursor).success).toBe(true);
 
-    const outOfBoundsCursor = {
+    const nonFiniteCursor = {
       type: "cursor",
       seq: 1,
-      x: 1.5,
-      y: -0.1,
+      x: Infinity,
+      y: 100,
       timestamp: Date.now(),
     };
-    expect(ClientMessageSchema.safeParse(outOfBoundsCursor).success).toBe(false);
+    expect(ClientMessageSchema.safeParse(nonFiniteCursor).success).toBe(false);
   });
 
   it("should enforce room capacity of 8 users synchronously", () => {
