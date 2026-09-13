@@ -1,5 +1,5 @@
 import React from "react";
-import { CanvasTool } from "../../../shared/types.js";
+import { CanvasTool } from "../shared/types.js";
 import {
   ArrowUpRight,
   Circle,

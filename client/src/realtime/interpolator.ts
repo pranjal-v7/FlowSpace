@@ -1,4 +1,4 @@
-import { RemoteCursorSnapshot, ServerCursorMessage } from "../../../shared/types.js";
+import { RemoteCursorSnapshot, ServerCursorMessage } from "../shared/types.js";
 
 export interface CursorSample {
   x: number;

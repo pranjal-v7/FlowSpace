@@ -1,4 +1,4 @@
-import { CanvasObject, MAX_UNDO_HISTORY } from "../../../shared/types.js";
+import { CanvasObject, MAX_UNDO_HISTORY } from "../shared/types.js";
 
 export type UndoAction =
   | { type: "create"; object: CanvasObject }

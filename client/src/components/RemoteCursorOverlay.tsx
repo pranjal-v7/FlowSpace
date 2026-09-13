@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Participant } from "../../../shared/types.js";
+import { Participant } from "../shared/types.js";
 import { RemoteCursorInterpolator } from "../realtime/interpolator.js";
 
 interface RemoteCursorOverlayProps {

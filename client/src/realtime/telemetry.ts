@@ -1,4 +1,4 @@
-import { ClientTelemetry, ServerPongMessage } from "../../../shared/types.js";
+import { ClientTelemetry, ServerPongMessage } from "../shared/types.js";
 import { RealtimeWebSocketClient } from "./wsClient.js";
 
 export class TelemetryManager {

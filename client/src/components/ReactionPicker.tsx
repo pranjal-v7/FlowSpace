@@ -1,5 +1,5 @@
 import React from "react";
-import { ALLOWED_EMOJIS, ServerReactionMessage } from "../../../shared/types.js";
+import { ALLOWED_EMOJIS, ServerReactionMessage } from "../shared/types.js";
 
 interface ReactionPickerProps {
   onSendReaction: (emoji: string) => void;

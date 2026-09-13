@@ -1,5 +1,5 @@
 import React from "react";
-import { ClientTelemetry } from "../../../shared/types.js";
+import { ClientTelemetry } from "../shared/types.js";
 import { Activity, X } from "lucide-react";
 
 interface TelemetryDrawerProps {

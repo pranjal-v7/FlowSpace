@@ -1,5 +1,5 @@
 import React from "react";
-import { CanvasTool, COLLABORATOR_COLORS, FONTS } from "../../../shared/types.js";
+import { CanvasTool, COLLABORATOR_COLORS, FONTS } from "../shared/types.js";
 
 interface StyleToolbarProps {
   activeTool: CanvasTool;

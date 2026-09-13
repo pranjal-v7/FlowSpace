@@ -1,5 +1,5 @@
 import React from "react";
-import { MAX_USERS_PER_ROOM, Participant } from "../../../shared/types.js";
+import { MAX_USERS_PER_ROOM, Participant } from "../shared/types.js";
 import { Users } from "lucide-react";
 
 interface PresenceSidebarProps {

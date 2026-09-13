@@ -11,7 +11,7 @@ import {
   Participant,
   ServerMessage,
   ServerReactionMessage,
-} from "../../shared/types.js";
+} from "./shared/types.js";
 import { LocalUndoManager } from "./canvas/undoManager.js";
 import { CanvasView } from "./components/CanvasView.js";
 import { Header } from "./components/Header.js";

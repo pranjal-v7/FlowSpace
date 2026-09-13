@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { COLLABORATOR_COLORS } from "../../../shared/types.js";
+import { COLLABORATOR_COLORS } from "../shared/types.js";
 import { PlusCircle, LogIn, RotateCw, Users, Sparkles, Shuffle, Check } from "lucide-react";
 import { DoodleGraffitiOverlay } from "./DoodleGraffitiOverlay.js";
 

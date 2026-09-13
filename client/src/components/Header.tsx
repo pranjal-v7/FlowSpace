@@ -1,5 +1,5 @@
 import React from "react";
-import { ConnectionState, ClientTelemetry } from "../../../shared/types.js";
+import { ConnectionState, ClientTelemetry } from "../shared/types.js";
 import { Activity, Crown, LogOut, Trash2, Users } from "lucide-react";
 
 interface HeaderProps {

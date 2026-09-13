@@ -1,9 +1,9 @@
-import { ServerMessageSchema } from "../../../shared/schemas.js";
+import { ServerMessageSchema } from "../shared/schemas.js";
 import {
   ClientMessage,
   ConnectionState,
   ServerMessage,
-} from "../../../shared/types.js";
+} from "../shared/types.js";
 
 export type MessageHandler = (message: ServerMessage) => void;
 export type StateChangeHandler = (state: ConnectionState) => void;

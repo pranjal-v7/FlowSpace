@@ -1,4 +1,4 @@
-import { CanvasObject, CanvasShapeObject, CanvasStrokeObject, CanvasTextObject } from "../../../shared/types.js";
+import { CanvasObject, CanvasShapeObject, CanvasStrokeObject, CanvasTextObject } from "../shared/types.js";
 
 export class CanvasRenderer {
   private canvas: HTMLCanvasElement;

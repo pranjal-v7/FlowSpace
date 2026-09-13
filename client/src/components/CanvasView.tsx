@@ -7,7 +7,7 @@ import {
   CanvasTool,
   MAX_POINTS_PER_STROKE_MSG,
   Participant,
-} from "../../../shared/types.js";
+} from "../shared/types.js";
 import { CanvasRenderer } from "../canvas/canvasRenderer.js";
 import { LocalUndoManager } from "../canvas/undoManager.js";
 import { LocalCursorEngine } from "../realtime/cursorEngine.js";
