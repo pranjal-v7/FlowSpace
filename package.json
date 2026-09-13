@@ -10,15 +10,16 @@
     "dev": "concurrently -n \"server,client\" -c \"blue,magenta\" \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
-    "install:all": "npm install --include=dev && npm --prefix server install --include=dev && npm --prefix client install --include=dev",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
     "build": "npm --prefix server run build && npm --prefix client run build",
-    "build:server": "npm --prefix server install --include=dev && npm --prefix server run build",
-    "build:client": "npm --prefix client install --include=dev && npm --prefix client run build",
-    "start": "node server/dist/index.js",
-    "start:server": "node server/dist/index.js",
+    "build:server": "npm --prefix server install",
+    "build:client": "npm --prefix client install && npm --prefix client run build",
+    "start": "npx tsx server/src/index.ts",
+    "start:server": "npx tsx server/src/index.ts",
     "test": "npm --prefix server run test"
   },
   "dependencies": {
+    "tsx": "^4.19.3",
     "typescript": "^5.7.3",
     "zod": "^3.24.2"
   },
