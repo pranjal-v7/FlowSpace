@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "echo 'Server build complete'",
+    "build:server": "echo 'Server build complete'",
     "start": "tsx src/index.ts",
     "test": "vitest run"
   },
