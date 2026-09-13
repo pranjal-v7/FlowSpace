@@ -1,6 +1,10 @@
 import http from "http";
 import { WebSocket, WebSocketServer } from "ws";
-import { PORT, WS_HEARTBEAT_INTERVAL_MS, WS_HEARTBEAT_TIMEOUT_MS } from "./config.js";
+import {
+  PORT,
+  SESSION_RECONNECT_WINDOW_MS,
+  WS_HEARTBEAT_INTERVAL_MS,
+} from "./config.js";
 import { MessageDispatcher } from "./dispatcher.js";
 import { RoomManager } from "./room.js";
 import { UserSession } from "./session.js";
@@ -113,10 +117,10 @@ const heartbeatInterval = setInterval(() => {
     }
   });
 
-  // 2. Clean up disconnected sessions that exceeded reconnect grace period (20 seconds)
+  // 2. Clean up disconnected sessions that exceeded reconnect grace period (30 seconds)
   for (const [roomId, room] of roomManager.getAllRooms().entries()) {
     for (const [userId, session] of room.members.entries()) {
-      if (!session.connected && now - session.lastSeenAt > WS_HEARTBEAT_TIMEOUT_MS + 8000) {
+      if (!session.connected && now - session.lastSeenAt > SESSION_RECONNECT_WINDOW_MS) {
         // Broadcast presence_leave for expired session
         room.broadcastExcept(userId, {
           type: "presence_leave",

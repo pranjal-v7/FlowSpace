@@ -53,7 +53,8 @@ describe("FlowSpace Protocol & Validation Tests", () => {
 
   it("should enforce room capacity of 8 users synchronously", () => {
     const room = roomManager.getOrCreateRoom("test-room");
-    expect(room.isFull()).toBe(false);
+    expect(room).not.toBeNull();
+    expect(room!.isFull()).toBe(false);
 
     // Mock 8 members
     for (let i = 0; i < 8; i++) {
@@ -73,15 +74,15 @@ describe("FlowSpace Protocol & Validation Tests", () => {
         rateLimiters: {} as any,
         isAlive: true,
       };
-      room.members.set(user.userId, user as any);
+      room!.addMember(user as any);
     }
 
-    expect(room.activeMemberCount).toBe(8);
-    expect(room.isFull()).toBe(true);
+    expect(room!.activeMemberCount).toBe(8);
+    expect(room!.isFull()).toBe(true);
   });
 
   it("should enforce owner-only erase policy for guests, but allow Room Creator to erase all objects", () => {
-    const room = roomManager.getOrCreateRoom("test-room-host");
+    const room = roomManager.getOrCreateRoom("test-room-host")!;
     room.hostId = "user_creator";
 
     const shapeAlice = {
@@ -92,10 +93,10 @@ describe("FlowSpace Protocol & Validation Tests", () => {
       color: "#6366F1",
       size: 2,
       opacity: 1,
-      startX: 0.1,
-      startY: 0.1,
-      endX: 0.4,
-      endY: 0.4,
+      startX: 100,
+      startY: 100,
+      endX: 400,
+      endY: 400,
       fill: false,
       createdAt: Date.now(),
     };
@@ -107,10 +108,10 @@ describe("FlowSpace Protocol & Validation Tests", () => {
       color: "#F43F5E",
       size: 2,
       opacity: 1,
-      startX: 0.5,
-      startY: 0.5,
-      endX: 0.8,
-      endY: 0.8,
+      startX: 500,
+      startY: 500,
+      endX: 800,
+      endY: 800,
       fill: false,
       createdAt: Date.now(),
     };
@@ -146,7 +147,7 @@ describe("FlowSpace Protocol & Validation Tests", () => {
     const validLeave = { type: "leave" };
     expect(ClientMessageSchema.safeParse(validLeave).success).toBe(true);
 
-    const room = roomManager.getOrCreateRoom("test-leave");
+    const room = roomManager.getOrCreateRoom("test-leave")!;
     const dummySocket = { readyState: 1, send: () => {} } as any;
     const user = {
       userId: "u_leaver",
@@ -169,7 +170,7 @@ describe("FlowSpace Protocol & Validation Tests", () => {
       canResume() { return this.state === "reconnecting"; },
     };
 
-    room.members.set(user.userId, user as any);
+    room.addMember(user as any);
     room.addObject({
       objectId: "shape_persisted",
       creatorId: user.userId,
@@ -178,10 +179,10 @@ describe("FlowSpace Protocol & Validation Tests", () => {
       color: "#10B981",
       size: 2,
       opacity: 1,
-      startX: 0.2,
-      startY: 0.2,
-      endX: 0.4,
-      endY: 0.4,
+      startX: 200,
+      startY: 200,
+      endX: 400,
+      endY: 400,
       fill: true,
       createdAt: Date.now(),
     });
@@ -196,5 +197,41 @@ describe("FlowSpace Protocol & Validation Tests", () => {
 
     // Canvas object created by leaver MUST remain!
     expect(room.objects.has("shape_persisted")).toBe(true);
+  });
+
+  it("should enforce 60-second empty room cooldown before deletion", () => {
+    const room = roomManager.getOrCreateRoom("cooldown-room")!;
+    const dummySocket = { readyState: 1, send: () => {} } as any;
+    const user = {
+      userId: "u_solo",
+      resumeToken: "tok_solo",
+      sessionVersion: 1,
+      displayName: "Solo",
+      color: "#6366F1",
+      roomId: "cooldown-room",
+      socket: dummySocket,
+      connected: true,
+    };
+    room.addMember(user as any);
+    expect(room.emptySince).toBeNull();
+
+    // Member leaves -> empty cooldown starts
+    room.removeMember(user.userId);
+    expect(room.emptySince).not.toBeNull();
+    const emptyTime = room.emptySince!;
+
+    // Clean at 30 seconds -> Room MUST NOT be deleted
+    roomManager.cleanDeadRooms(60000);
+    expect(roomManager.getRoom("cooldown-room")).toBeDefined();
+
+    // If a member rejoins within cooldown -> emptySince is reset
+    room.addMember(user as any);
+    expect(room.emptySince).toBeNull();
+
+    // Member leaves again and 60 seconds expire -> Room deleted
+    room.removeMember(user.userId);
+    room.emptySince = Date.now() - 61000;
+    roomManager.cleanDeadRooms(60000);
+    expect(roomManager.getRoom("cooldown-room")).toBeUndefined();
   });
 });

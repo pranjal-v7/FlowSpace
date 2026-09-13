@@ -17,6 +17,7 @@ export function handleLeave(
   const userId = session.userId;
 
   // 1. Remove member from room presence immediately (canvas objects remain untouched!)
+  // If last member, room.removeMember() automatically initiates the 60-second empty cooldown
   room.removeMember(userId);
   roomManager.unregisterResumeToken(session.resumeToken);
 
@@ -51,10 +52,5 @@ export function handleLeave(
     }
   } catch {
     // ignore
-  }
-
-  // 6. Clean up room if empty (MVP in-memory design)
-  if (room.members.size === 0) {
-    roomManager.cleanDeadRooms();
   }
 }

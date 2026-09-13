@@ -8,7 +8,7 @@ import {
   RemoteCursorSnapshot,
   ServerMessage,
 } from "./shared/types.js";
-import { MAX_BACKPRESSURE_BYTES } from "./config.js";
+import { EMPTY_ROOM_COOLDOWN_MS, MAX_ACTIVE_ROOMS, MAX_BACKPRESSURE_BYTES } from "./config.js";
 import { UserSession } from "./session.js";
 
 export class Room {
@@ -18,6 +18,7 @@ export class Room {
   public members: Map<string, UserSession> = new Map();
   public objects: Map<string, CanvasObject> = new Map();
   public lastActiveAt: number = Date.now();
+  public emptySince: number | null = null; // Timestamp when room became empty (for 60s cooldown)
 
   constructor(roomId: string) {
     this.roomId = roomId;
@@ -44,10 +45,19 @@ export class Room {
     return COLLABORATOR_COLORS[this.members.size % COLLABORATOR_COLORS.length];
   }
 
+  addMember(session: UserSession): void {
+    this.members.set(session.userId, session);
+    this.emptySince = null; // Cancel empty cooldown immediately
+    this.lastActiveAt = Date.now();
+  }
+
   removeMember(userId: string): boolean {
     const deleted = this.members.delete(userId);
     if (deleted) {
       this.lastActiveAt = Date.now();
+      if (this.members.size === 0) {
+        this.emptySince = Date.now(); // Start 60s empty cooldown
+      }
     }
     return deleted;
   }
@@ -145,9 +155,16 @@ export class RoomManager {
   // Map of resumeToken -> { roomId, userId }
   private resumeTokens: Map<string, { roomId: string; userId: string }> = new Map();
 
-  getOrCreateRoom(roomId: string): Room {
+  getOrCreateRoom(roomId: string): Room | null {
     let room = this.rooms.get(roomId);
     if (!room) {
+      // Flood protection: clean dead rooms and check capacity
+      if (this.rooms.size >= MAX_ACTIVE_ROOMS) {
+        this.cleanDeadRooms(0); // Aggressively sweep any fully empty rooms
+        if (this.rooms.size >= MAX_ACTIVE_ROOMS) {
+          return null; // Room limit reached
+        }
+      }
       room = new Room(roomId);
       this.rooms.set(roomId, room);
     }
@@ -183,11 +200,7 @@ export class RoomManager {
     const session = room.members.get(userId);
     if (session) {
       this.resumeTokens.delete(session.resumeToken);
-      room.members.delete(userId);
-    }
-
-    if (room.members.size === 0) {
-      this.rooms.delete(roomId);
+      room.removeMember(userId);
     }
   }
 
@@ -195,10 +208,19 @@ export class RoomManager {
     return this.rooms;
   }
 
-  cleanDeadRooms(): void {
+  cleanDeadRooms(cooldownMs: number = EMPTY_ROOM_COOLDOWN_MS): void {
+    const now = Date.now();
     for (const [roomId, room] of this.rooms.entries()) {
       if (room.members.size === 0) {
-        this.rooms.delete(roomId);
+        if (room.emptySince === null) {
+          room.emptySince = now;
+        } else if (now - room.emptySince >= cooldownMs) {
+          // Unregister any lingering tokens for this room
+          for (const session of room.members.values()) {
+            this.resumeTokens.delete(session.resumeToken);
+          }
+          this.rooms.delete(roomId);
+        }
       }
     }
   }

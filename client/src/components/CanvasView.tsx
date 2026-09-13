@@ -421,6 +421,18 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
     }
 
     if (currentStrokeRef.current) {
+      const pts = currentStrokeRef.current.points;
+      const lastPoint = pts[pts.length - 1];
+      const dx = worldX - lastPoint[0];
+      const dy = worldY - lastPoint[1];
+      const dist = Math.hypot(dx, dy);
+
+      // Filter sub-pixel micro-jitter while retaining fine handwriting fidelity (2.5 world px)
+      const MIN_POINT_DISTANCE = 2.5;
+      if (dist < MIN_POINT_DISTANCE) {
+        return;
+      }
+
       const point: [number, number] = [worldX, worldY];
       currentStrokeRef.current.points.push(point);
       strokeBatchRef.current.push(point);
@@ -622,28 +634,31 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   };
 
   // Zoom button handlers
-  const handleZoomIn = () => {
+  const handleZoomIn = (e?: React.MouseEvent | React.PointerEvent) => {
+    if (e) e.stopPropagation();
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    setCamera(zoomAtScreenPoint(centerX, centerY, camera, camera.zoom * 1.25));
+    setCamera((prev) => zoomAtScreenPoint(centerX, centerY, prev, prev.zoom * 1.25));
   };
 
-  const handleZoomOut = () => {
+  const handleZoomOut = (e?: React.MouseEvent | React.PointerEvent) => {
+    if (e) e.stopPropagation();
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    setCamera(zoomAtScreenPoint(centerX, centerY, camera, camera.zoom * 0.8));
+    setCamera((prev) => zoomAtScreenPoint(centerX, centerY, prev, prev.zoom * 0.8));
   };
 
-  const handleResetZoom = () => {
+  const handleResetZoom = (e?: React.MouseEvent | React.PointerEvent) => {
+    if (e) e.stopPropagation();
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    setCamera(zoomAtScreenPoint(centerX, centerY, camera, 1.0));
+    setCamera((prev) => zoomAtScreenPoint(centerX, centerY, prev, 1.0));
   };
 
   // Determine cursor CSS class
@@ -711,7 +726,13 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
       )}
 
       {/* Canvas Zoom Controls Dock: [ − ] 100% [ + ] */}
-      <div className="canvas-zoom-control glass-panel">
+      <div
+        className="canvas-zoom-control glass-panel"
+        onPointerDown={(e) => e.stopPropagation()}
+        onPointerMove={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
           type="button"
           className="zoom-btn"

@@ -644,6 +644,8 @@ button {
   border: 1px solid var(--border-panel);
   user-select: none;
   -webkit-user-select: none;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .zoom-btn {
@@ -657,6 +659,8 @@ button {
   background: transparent;
   border: none;
   cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
   transition: all 0.15s ease;
   padding: 0;
 }
@@ -685,6 +689,8 @@ button {
   background: transparent;
   border: none;
   cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
   transition: all 0.15s ease;
 }
 

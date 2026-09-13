@@ -19,6 +19,8 @@ export class CanvasRenderer {
     this.dpr = window.devicePixelRatio || 1;
     this.canvas.width = Math.round(rect.width * this.dpr);
     this.canvas.height = Math.round(rect.height * this.dpr);
+    this.canvas.style.width = `${rect.width}px`;
+    this.canvas.style.height = `${rect.height}px`;
     this.ctx.resetTransform();
     this.ctx.scale(this.dpr, this.dpr);
   }
@@ -107,8 +109,15 @@ export class CanvasRenderer {
     this.ctx.restore();
   }
 
+  /**
+   * Smooth pen stroke rendering using quadratic Bézier midpoint interpolation.
+   * Produces natural, continuous handwritten curves for both live local previews
+   * and completed/remote strokes without polygon-like straight line artifacts.
+   */
   private renderStroke(stroke: CanvasStrokeObject): void {
-    if (stroke.points.length < 1) return;
+    const pts = stroke.points;
+    const len = pts.length;
+    if (len < 1) return;
 
     this.ctx.save();
     this.ctx.lineCap = "round";
@@ -124,21 +133,31 @@ export class CanvasRenderer {
       this.ctx.strokeStyle = stroke.color;
     }
 
-    this.ctx.beginPath();
-    const startX = stroke.points[0][0];
-    const startY = stroke.points[0][1];
-    this.ctx.moveTo(startX, startY);
-
-    if (stroke.points.length === 1) {
-      this.ctx.arc(startX, startY, stroke.size / 2, 0, Math.PI * 2);
+    if (len === 1) {
+      // Single tap / click dot
+      this.ctx.beginPath();
+      this.ctx.arc(pts[0][0], pts[0][1], stroke.size / 2, 0, Math.PI * 2);
       this.ctx.fillStyle = stroke.color;
       this.ctx.fill();
+    } else if (len === 2) {
+      // Direct 2-point segment
+      this.ctx.beginPath();
+      this.ctx.moveTo(pts[0][0], pts[0][1]);
+      this.ctx.lineTo(pts[1][0], pts[1][1]);
+      this.ctx.stroke();
     } else {
-      for (let i = 1; i < stroke.points.length; i++) {
-        const px = stroke.points[i][0];
-        const py = stroke.points[i][1];
-        this.ctx.lineTo(px, py);
+      // Quadratic Bézier curve through midpoints
+      this.ctx.beginPath();
+      this.ctx.moveTo(pts[0][0], pts[0][1]);
+
+      for (let i = 1; i < len - 1; i++) {
+        const midX = (pts[i][0] + pts[i + 1][0]) / 2;
+        const midY = (pts[i][1] + pts[i + 1][1]) / 2;
+        this.ctx.quadraticCurveTo(pts[i][0], pts[i][1], midX, midY);
       }
+
+      // Smooth transition to final point
+      this.ctx.lineTo(pts[len - 1][0], pts[len - 1][1]);
       this.ctx.stroke();
     }
 

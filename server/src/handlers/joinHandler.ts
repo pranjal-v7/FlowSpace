@@ -27,6 +27,17 @@ export function handleJoin(
   }
 
   const room = roomManager.getOrCreateRoom(message.roomId);
+  if (!room) {
+    socket.send(
+      JSON.stringify({
+        type: "error",
+        code: "ROOM_LIMIT_REACHED",
+        message: "Server active room limit reached. Please join an existing room or try again shortly.",
+      } satisfies ServerMessage)
+    );
+    socket.close(1008, "Server room limit reached");
+    return false;
+  }
 
   // Check if resumeToken was supplied in join
   if (message.resumeToken) {
@@ -62,7 +73,7 @@ export function handleJoin(
     room.hostId = session.userId;
   }
 
-  room.members.set(session.userId, session);
+  room.addMember(session);
   roomManager.registerResumeToken(session.resumeToken, room.roomId, session.userId);
   setSession(session);
 
@@ -122,6 +133,18 @@ export function handleResume(
   if (!existing || existing.room.roomId !== message.roomId) {
     // Unknown or expired token -> treat as fresh join if capacity permits (PRD Section 21)
     const room = roomManager.getOrCreateRoom(message.roomId);
+    if (!room) {
+      socket.send(
+        JSON.stringify({
+          type: "error",
+          code: "ROOM_LIMIT_REACHED",
+          message: "Server active room limit reached.",
+        } satisfies ServerMessage)
+      );
+      socket.close(1008, "Server room limit reached");
+      return false;
+    }
+
     if (room.isFull()) {
       socket.send(
         JSON.stringify({
@@ -141,7 +164,7 @@ export function handleResume(
       `User-${Math.floor(Math.random() * 1000)}`,
       color
     );
-    room.members.set(session.userId, session);
+    room.addMember(session);
     roomManager.registerResumeToken(session.resumeToken, room.roomId, session.userId);
     setSession(session);
 
@@ -211,6 +234,7 @@ function handleResumeExistingSession(
   session.sessionVersion += 1;
   session.lastSeenAt = Date.now();
   session.isAlive = true;
+  room.emptySince = null; // Reconnected, cancel empty room cooldown
   setSession(session);
 
   const isHost = session.userId === room.hostId;
