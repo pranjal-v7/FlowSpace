@@ -171,13 +171,19 @@ export function handleErase(
     return;
   }
 
+  const existingObj = room.objects.get(message.objectId);
+  if (!existingObj) {
+    // Object already deleted or not found; idempotent erase
+    return;
+  }
+
   const success = room.removeObject(message.objectId, session.userId);
   if (!success) {
     session.socket.send(
       JSON.stringify({
         type: "error",
         code: "UNAUTHORIZED_ERASE",
-        message: "Cannot erase: object does not exist or was created by another user",
+        message: "Cannot erase: object was created by another user",
       } satisfies ServerMessage)
     );
     return;

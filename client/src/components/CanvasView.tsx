@@ -189,8 +189,15 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
 
   // Keep latest objects in ref for stable render access
   const objectsRef = useRef(objects);
+  const locallyErasedIdsRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     objectsRef.current = objects;
+    const currentIds = new Set(objects.map((o) => o.objectId));
+    for (const id of locallyErasedIdsRef.current) {
+      if (!currentIds.has(id)) {
+        locallyErasedIdsRef.current.delete(id);
+      }
+    }
   }, [objects]);
 
   // Handle Spacebar hotkey for quick hand-panning
@@ -384,7 +391,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         creatorId: currentUserId,
         type: "stroke",
         color,
-        size: isHigh ? Math.max(16, size * 2.5) : size,
+        size: isHigh ? Math.min(128, Math.max(16, Math.round(size * 2.5))) : size,
         opacity: isHigh ? 0.45 : 1,
         isHighlighter: isHigh,
         points: [[worldX, worldY]],
@@ -655,7 +662,15 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   // Eraser hit test and deletion in World Coordinates
   const checkErase = (worldX: number, worldY: number) => {
     const hitObj = findHitObject(worldX, worldY);
-    if (hitObj && (isHost || hitObj.creatorId === currentUserId)) {
+    if (!hitObj) return;
+
+    if (isHost || hitObj.creatorId === currentUserId) {
+      locallyErasedIdsRef.current.add(hitObj.objectId);
+      // Immediately remove from local ref and re-render for instantaneous responsive feedback
+      objectsRef.current = objectsRef.current.filter((o) => o.objectId !== hitObj.objectId);
+      if (rendererRef.current) {
+        rendererRef.current.render(objectsRef.current, null, null, cameraRef.current);
+      }
       onRemoveObject(hitObj.objectId);
       undoManager.recordErase(hitObj);
       wsClient.send({
@@ -667,10 +682,12 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
 
   const findHitObject = (worldX: number, worldY: number): CanvasObject | null => {
     const hitThreshold = Math.max(12, 14 / cameraRef.current.zoom);
+    const list = objectsRef.current;
 
     // Search from newest to oldest
-    for (let i = objects.length - 1; i >= 0; i--) {
-      const obj = objects[i];
+    for (let i = list.length - 1; i >= 0; i--) {
+      const obj = list[i];
+      if (locallyErasedIdsRef.current.has(obj.objectId)) continue;
       if (obj.type === "stroke") {
         for (const pt of obj.points) {
           const dist = Math.hypot(worldX - pt[0], worldY - pt[1]);

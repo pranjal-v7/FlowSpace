@@ -88,14 +88,49 @@ export const App: React.FC = () => {
   const [interpolationDelay, setInterpolationDelay] = useState(60);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
-  // Toasts
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  // Single active toast notification with automatic deduplication
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recentToastsRef = useRef<Map<string, number>>(new Map());
+
   const addToast = useCallback((type: "error" | "warning" | "info", text: string) => {
-    const id = `toast_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    setToasts((prev) => [...prev, { id, type, text }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
+    const now = Date.now();
+    const lastSeen = recentToastsRef.current.get(text);
+    // Deduplicate identical warning/error/info messages arriving within a 2.5 second window
+    // (e.g. while continuously drawing strokes or erasing)
+    if (lastSeen && now - lastSeen < 2500) {
+      return;
+    }
+    recentToastsRef.current.set(text, now);
+
+    // Clean up older cache entries periodically
+    if (recentToastsRef.current.size > 20) {
+      for (const [key, timestamp] of recentToastsRef.current.entries()) {
+        if (now - timestamp > 5000) {
+          recentToastsRef.current.delete(key);
+        }
+      }
+    }
+
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+
+    const id = `toast_${now}_${Math.random().toString(36).substring(2, 6)}`;
+    setToast({ id, type, text });
+
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
     }, 4000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
   }, []);
 
   // Initialize Connection state listeners and message router
@@ -452,7 +487,7 @@ export const App: React.FC = () => {
   return (
     <div className="app-container">
       {/* Toast Notifications */}
-      <ToastNotification toasts={toasts} />
+      <ToastNotification toast={toast} />
 
       {/* Leave Confirmation Modal */}
       <LeaveConfirm

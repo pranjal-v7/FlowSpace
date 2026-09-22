@@ -62,7 +62,7 @@ export const StrokeObjectSchema = z.object({
   creatorId: z.string().min(1),
   type: z.literal("stroke"),
   color: z.string(),
-  size: z.number().min(1).max(64),
+  size: z.number().min(1).max(128),
   opacity: z.number().min(0.01).max(1),
   isHighlighter: z.boolean().default(false),
   points: z.array(z.tuple([z.number().finite(), z.number().finite()])).max(1000),
@@ -135,7 +135,7 @@ export const ClientStrokeSchema = z.object({
   type: z.literal("stroke"),
   strokeId: z.string().min(1).max(64),
   color: z.string(),
-  size: z.number().min(1).max(64),
+  size: z.number().min(1).max(128),
   opacity: z.number().min(0.01).max(1).default(1),
   isHighlighter: z.boolean().default(false),
   points: z.array(z.tuple([

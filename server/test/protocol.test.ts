@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { RoomManager } from "../src/room.js";
 import { MessageDispatcher } from "../src/dispatcher.js";
 import { ClientMessageSchema } from "../src/shared/schemas.js";
@@ -49,6 +49,61 @@ describe("FlowSpace Protocol & Validation Tests", () => {
       timestamp: Date.now(),
     };
     expect(ClientMessageSchema.safeParse(nonFiniteCursor).success).toBe(false);
+  });
+
+  it("should validate full-width highlighter stroke up to 128px (including 32px slider * 2.5 = 80px)", () => {
+    const highlighterStroke = {
+      type: "stroke",
+      strokeId: "stroke_highlighter_1",
+      color: "#F43F5E",
+      size: 80, // 32 * 2.5
+      opacity: 0.45,
+      isHighlighter: true,
+      points: [[100, 150], [105, 155]] as [number, number][],
+    };
+    const res = ClientMessageSchema.safeParse(highlighterStroke);
+    expect(res.success).toBe(true);
+
+    const oversizedStroke = {
+      type: "stroke",
+      strokeId: "stroke_oversized",
+      color: "#F43F5E",
+      size: 150, // exceeds 128
+      opacity: 0.45,
+      isHighlighter: true,
+      points: [[100, 150]] as [number, number][],
+    };
+    expect(ClientMessageSchema.safeParse(oversizedStroke).success).toBe(false);
+  });
+
+  it("should handle idempotent erase without throwing UNAUTHORIZED_ERASE for non-existent objects", () => {
+    const room = roomManager.getOrCreateRoom("test-erase-room")!;
+    const dummySocket = { readyState: 1, send: vi.fn() } as any;
+    const user = {
+      userId: "u_eraser",
+      resumeToken: "tok_eraser",
+      sessionVersion: 1,
+      displayName: "EraserUser",
+      color: "#10B981",
+      roomId: "test-erase-room",
+      socket: dummySocket,
+      connected: true,
+      rateLimiters: {
+        actionLimiter: { tryConsume: () => true },
+      },
+    };
+    room.addMember(user as any);
+
+    // Erasing an object that does not exist or was already removed
+    const eraseMsg = {
+      type: "erase" as const,
+      objectId: "already_deleted_obj",
+    };
+
+    const socketSendSpy = dummySocket.send;
+    dispatcher.dispatch(dummySocket, JSON.stringify(eraseMsg), user as any, () => {});
+    // Should NOT have sent an error back to the socket
+    expect(socketSendSpy).not.toHaveBeenCalled();
   });
 
   it("should enforce room capacity of 8 users synchronously", () => {
